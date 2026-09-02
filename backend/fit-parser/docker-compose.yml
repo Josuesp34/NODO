@@ -1,0 +1,16 @@
+# docker-compose.yml
+
+services:
+  fit-parser:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: saas_fit_parser
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app:/app/app 
+    environment:
+      - PROJECT_NAME=SaaS Entrenamiento IA
+      - ENVIRONMENT=development
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload

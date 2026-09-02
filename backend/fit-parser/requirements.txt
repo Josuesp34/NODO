@@ -1,0 +1,5 @@
+fastapi==0.110.0
+uvicorn[standard]==0.27.1
+pydantic==2.6.3
+pydantic-settings==2.2.1
+garmin-fit-sdk==21.214.0

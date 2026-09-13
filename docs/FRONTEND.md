@@ -4,7 +4,7 @@ Se trabajará en un solo repositorio y dos aplicaciones: NODO Lab web para el en
 
 ## Primer corte de producto
 
-NODO Lab implementará autenticación de entrenador, lista de atletas, calendario por atleta y editor/publicación de sesiones. NODO móvil implementará activación, inicio de sesión, entrenamiento del día, check-in de recuperación y consulta de sesiones publicadas.
+NODO Lab ya implementa inicio y cierre de sesión de entrenador, restauración de sesión y renovación de token; siguen lista de atletas, calendario por atleta y editor/publicación de sesiones. NODO móvil implementará activación, inicio de sesión, entrenamiento del día, check-in de recuperación y consulta de sesiones publicadas.
 
 El cliente compartido vive en `frontend/packages/api-client`. Debe reflejar `docs/API_NODO.md`; al añadir un endpoint al backend, se actualiza su tipo y un consumidor antes de integrarlo a la interfaz.
 

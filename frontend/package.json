@@ -1,0 +1,14 @@
+{
+  "name": "nodo-frontend",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev:lab": "npm run dev --workspace=@nodo/lab",
+    "dev:mobile": "npm run start --workspace=@nodo/mobile",
+    "build:lab": "npm run build --workspace=@nodo/lab",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

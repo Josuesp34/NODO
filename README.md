@@ -7,6 +7,7 @@ Plataforma en desarrollo para que entrenadores planifiquen, personalicen y revis
 - [Visión, alcance, objetivos y plan de ocho semanas](docs/PLAN_PRODUCTO.md).
 - [Arquitectura y contratos propuestos](docs/ARQUITECTURA.md).
 - [Contratos de la API base](docs/API_NODO.md).
+- [Guía de arranque de NODO Lab y NODO](docs/FRONTEND.md).
 - [Estado técnico, decisiones del refactor y pendientes](docs/ESTADO_TECNICO.md).
 
 **Estado actual: base local de backend, no MVP listo para usuarios.** Ya incluye autenticación, relación entrenador-atleta y planificación estructurada. Todavía no hay interfaz, asociación obligatoria actividad-atleta, sincronización, copiloto, notificaciones ni gestión de molestias operativa. Los modelos de métricas diarias siguen siendo bocetos. No desplegar esta base como servicio público.
@@ -23,6 +24,8 @@ Copy-Item .env.example .env
 ```
 
 Editar `.env`: cambiar la contraseña de ejemplo y reflejarla en ambas URLs. `DATABASE_URL` usa `localhost` para Python local; `DOCKER_DATABASE_URL` usa `timescaledb` para la red de Compose. El archivo `.env` no se versiona.
+
+El puerto local por defecto de la base es `5433`, para no interferir con una instalación de PostgreSQL que use `5432`.
 
 ```powershell
 docker compose up -d timescaledb
@@ -47,7 +50,11 @@ cd backend/fit-parser
 .venv/Scripts/python.exe -m pytest -q
 ```
 
-Las pruebas no requieren una base activa: verifican métricas, SDK FIT real con archivos sintéticos, errores HTTP y límites transaccionales con una sesión simulada. No sustituyen la integración real PostgreSQL/TimescaleDB, pendiente de ejecutar con Docker activo. CI ejecuta estas pruebas en Python 3.11 y 3.12.
+Las pruebas no requieren una base activa: verifican métricas, SDK FIT real con archivos sintéticos, errores HTTP y límites transaccionales con una sesión simulada. En la validación local también se levantó PostgreSQL/TimescaleDB, se aplicó Alembic y `/health` respondió desde la API Docker. CI ejecuta estas pruebas en Python 3.11 y 3.12.
+
+## Frontend
+
+El monorepo de interfaz está en [`frontend`](frontend/README.md): NODO Lab usa Next.js para entrenadores y NODO usa Expo/React Native para atletas. Ambos consumen la misma API y comparten únicamente el cliente y los tipos HTTP. Consultar la [guía de frontend](docs/FRONTEND.md) antes de empezar una pantalla.
 
 ## Contrato de ingesta de desarrollo
 

@@ -1,4 +1,5 @@
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,6 +15,13 @@ def get_application() -> FastAPI:
         title=settings.PROJECT_NAME,
         description="Base de desarrollo: ingesta FIT para el futuro copiloto del entrenador",
         version="0.2.0",
+    )
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
     application.include_router(router, prefix=settings.API_V1_STR)
     application.include_router(auth_router, prefix=settings.API_V1_STR)

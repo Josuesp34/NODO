@@ -11,6 +11,7 @@ services:
     environment:
       ENVIRONMENT: development
       DATABASE_URL: ${DOCKER_DATABASE_URL:?Configurar DOCKER_DATABASE_URL en .env}
+      ALLOW_COACH_REGISTRATION: ${ALLOW_COACH_REGISTRATION:-false}
     depends_on:
       timescaledb:
         condition: service_healthy
@@ -24,7 +25,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Configurar POSTGRES_PASSWORD}
       PGDATA: /var/lib/postgresql/data
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5433}:5432"
     volumes:
       - timescaledb_data:/var/lib/postgresql/data
     healthcheck:
@@ -32,6 +33,18 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    depends_on:
+      timescaledb-init:
+        condition: service_completed_successfully
+
+  # La imagen HA usa el UID 1000. Docker Desktop crea los volúmenes con otro
+  # propietario, por lo que se prepara una sola vez antes de iniciar Postgres.
+  timescaledb-init:
+    image: alpine:3.21
+    volumes:
+      - timescaledb_data:/data
+    command: ["sh", "-c", "chown -R 1000:1000 /data && chmod -R 700 /data"]
+    restart: "no"
 
 volumes:
   timescaledb_data:

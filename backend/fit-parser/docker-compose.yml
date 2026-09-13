@@ -1,16 +1,37 @@
-# docker-compose.yml
-
+# Entorno exclusivamente local. Copiar .env.example a .env antes de arrancar.
 services:
   fit-parser:
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile
-    container_name: saas_fit_parser
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     volumes:
-      - ./app:/app/app 
+      - ./app:/app/app
     environment:
-      - PROJECT_NAME=SaaS Entrenamiento IA
-      - ENVIRONMENT=development
+      ENVIRONMENT: development
+      DATABASE_URL: ${DOCKER_DATABASE_URL:?Configurar DOCKER_DATABASE_URL en .env}
+    depends_on:
+      timescaledb:
+        condition: service_healthy
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  timescaledb:
+    image: timescale/timescaledb-ha:pg15-latest
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?Configurar POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:?Configurar POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Configurar POSTGRES_PASSWORD}
+      PGDATA: /var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - timescaledb_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"${POSTGRES_USER}\" -d \"${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  timescaledb_data:

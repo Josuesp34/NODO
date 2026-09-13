@@ -2,9 +2,9 @@
 
 13 de septiembre de 2026.
 
-## Alcance de este commit
+## Alcance de la base actual
 
-Se incorpora el trabajo local pendiente y un refactor acotado; no se construye el MVP completo en este commit. El repositorio ya tenía un commit `aaed0e0` titulado `first commit`. Esta entrega continúa ese historial.
+Se incorpora un refactor acotado y la base del MVP; aún no se construye el producto completo.
 
 Cambios realizados:
 
@@ -19,6 +19,10 @@ Cambios realizados:
 - CTL/ATL diarios con `alpha=1/tau`; TSB al inicio del día. Eliminado el cálculo automático mal etiquetado como ACWR. Los campos ORM antiguos se mantienen, sin producir valores nuevos de ACWR.
 - Excepciones HTTP conservan 400/413/422; fallos de persistencia realizan rollback sin exponer detalles internos.
 - Pruebas y CI; guía de trabajo y plan de producto para dos personas.
+- Autenticación con sesiones rotables, invitación y activación de atletas, y aislamiento entrenador-atleta.
+- Planeación por bloques y sesiones estructuradas, publicación y control de versiones para evitar sobrescrituras.
+- Migración inicial Alembic y contratos de API documentados.
+- Workspace inicial con NODO Lab (web) y NODO (Expo) sobre un cliente HTTP compartido.
 
 ## Convenciones de cálculo
 
@@ -30,7 +34,7 @@ CTL/ATL son funciones aisladas, no un historial operativo. El código que las co
 
 ## Todavía pendiente
 
-Autenticación, aislamiento de equipos, CRUD de atletas y planes, intervalos estructurados, laps persistidos, asociación obligatoria actividad-atleta, idempotencia, migraciones, cola de ingestión, frontend, conectores, datos diarios normalizados, reportes de molestias y copiloto. El servicio actual no recibe ni interpreta recuperación diaria ni reportes físicos; esos flujos quedan especificados en los documentos de producto y arquitectura.
+Interfaz funcional de autenticación, calendario y editor de sesiones; asociación obligatoria actividad-atleta, idempotencia, cola de ingestión, conectores, datos diarios normalizados, reportes de molestias, notificaciones y copiloto. El servicio actual no recibe ni interpreta recuperación diaria ni reportes físicos; esos flujos quedan especificados en los documentos de producto y arquitectura.
 
 La base conserva actividad sin atleta para desarrollo; por ello la ingesta no está habilitada fuera de `development`. Esa restricción no sustituye autenticación y no convierte un despliegue público de desarrollo en seguro. El límite de lectura FIT tampoco reemplaza un límite de cuerpo HTTP en el proxy antes de parsear multipart.
 
@@ -38,6 +42,6 @@ Las dependencias principales existentes se conservaron para limitar el refactor.
 
 ## Validación
 
-Las pruebas cubren cálculos, datos faltantes, muestreo irregular, FIT sintético con SDK real, rechazos HTTP, registro ORM, rollback y health check. Las pruebas de API usan persistencia simulada y no demuestran escritura real en PostgreSQL ni creación de hypertables.
+Las pruebas cubren cálculos, datos faltantes, muestreo irregular, FIT sintético con SDK real, rechazos HTTP, registro ORM, rollback, autenticación y planeación. En la validación actual, las 35 pruebas pasaron y se levantó TimescaleDB local, se aplicó la migración inicial y `GET /health` respondió 200 contra PostgreSQL real. También se comprobó CORS para NODO Lab en `http://localhost:3000`.
 
-En esta sesión Docker Desktop no tenía motor Linux activo. No se ejecutó bootstrap real, build de contenedores ni prueba contra TimescaleDB. Antes de usar datos de pilotos, levantar Docker, verificar ubicación del volumen preexistente, hacer backup si aplica, inicializar una base de prueba nueva y comprobar una importación y consulta reales. Ningún dato o volumen existente se movió ni eliminó.
+Docker Desktop en Windows requiere preparar el volumen de la imagen HA con UID 1000; `timescaledb-init` lo hace automáticamente. La base local usa el puerto `5433`, porque `5432` estaba ocupado. El contenedor completo de la API queda por construir en una ejecución de Docker sin el límite de tiempo de esta sesión; la API se verificó con Uvicorn local conectado a la misma base.

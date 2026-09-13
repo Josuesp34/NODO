@@ -1,8 +1,11 @@
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.routes import router
+from app.api.auth_routes import router as auth_router
+from app.api.planning_routes import router as planning_router
 from app.core.config import settings
 from app.core.database import get_db
 
@@ -13,7 +16,16 @@ def get_application() -> FastAPI:
         description="Base de desarrollo: ingesta FIT para el futuro copiloto del entrenador",
         version="0.2.0",
     )
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     application.include_router(router, prefix=settings.API_V1_STR)
+    application.include_router(auth_router, prefix=settings.API_V1_STR)
+    application.include_router(planning_router, prefix=settings.API_V1_STR)
 
     @application.get("/health", tags=["System"])
     async def health_check(db: AsyncSession = Depends(get_db)):

@@ -4,7 +4,7 @@ Estado: diseño propuesto, salvo lo identificado como implementado en `ESTADO_TE
 
 ## Estructura
 
-Backend modular en FastAPI, PostgreSQL y TimescaleDB para series temporales. Frontend web previsto con calendario, vista de equipo y vista atleta. Se mantiene la carpeta `backend/fit-parser` para no añadir una mudanza al refactor inicial; el backend puede ampliarse por módulos antes de dividirlo en servicios. Kubernetes no es necesario para este piloto.
+Backend modular en FastAPI, PostgreSQL y TimescaleDB para series temporales. NODO será la experiencia móvil del atleta y NODO Lab la experiencia web del entrenador; ambas usarán la misma API, cuentas y reglas de acceso. Se mantiene la carpeta `backend/fit-parser` para no añadir una mudanza al refactor inicial; el backend puede ampliarse por módulos antes de dividirlo en servicios. Kubernetes no es necesario para este piloto.
 
 - `api`: HTTP, validación del contrato y autenticación/autorización.
 - `domain`: conceptos y cálculos independientes de la infraestructura.

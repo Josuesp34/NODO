@@ -59,7 +59,10 @@ def upload(client, name="sample.fit", content=b"sample", **kwargs):
 
 def test_all_models_registered_and_mappers_resolve():
     configure_mappers()
-    assert set(Base.metadata.tables) == {"users", "activities", "telemetry_records", "prescribed_workouts", "daily_physiology"}
+    assert set(Base.metadata.tables) == {
+        "users", "activities", "telemetry_records", "prescribed_workouts", "daily_physiology",
+        "auth_sessions", "athlete_invitations", "training_blocks",
+    }
 
 
 def test_bad_extension_and_invalid_binary_keep_400(api):

@@ -1,14 +1,17 @@
 # NODO/ NODO Lab 
 
-Plataforma en desarrollo para que entrenadores planifiquen, personalicen y revisen el entrenamiento de sus atletas, con datos de ejecución, descanso y molestias y ayuda de IA bajo aprobación humana.
+Plataforma en desarrollo para que entrenadores planifiquen, personalicen y revisen el entrenamiento de sus atletas, con datos de ejecución, descanso y molestias y ayuda de IA bajo aprobación humana. NODO es la experiencia del atleta y NODO Lab será la experiencia web del entrenador.
 
 ## Documentos para empezar juntos
 
 - [Visión, alcance, objetivos y plan de ocho semanas](docs/PLAN_PRODUCTO.md).
 - [Arquitectura y contratos propuestos](docs/ARQUITECTURA.md).
+- [Contratos de la API base](docs/API_NODO.md).
+- [Guía de arranque de NODO Lab y NODO](docs/FRONTEND.md).
+- [Relevo de frontend para Antigravity](docs/ANTIGRAVITY_FRONTEND_HANDOFF.md).
 - [Estado técnico, decisiones del refactor y pendientes](docs/ESTADO_TECNICO.md).
 
-**Estado actual: base local de backend, no MVP listo para usuarios.** Existe importación FIT de una sesión y cálculos aislados. Todavía no hay interfaz, autenticación, asociación obligatoria atleta–actividad, sincronización, copiloto ni gestión de molestias operativa. Los modelos de planes y métricas diarias son bocetos. No desplegar esta base como servicio público.
+**Estado actual: base local de backend, no MVP listo para usuarios.** Ya incluye autenticación, relación entrenador-atleta y planificación estructurada. Todavía no hay interfaz, asociación obligatoria actividad-atleta, sincronización, copiloto, notificaciones ni gestión de molestias operativa. Los modelos de métricas diarias siguen siendo bocetos. No desplegar esta base como servicio público.
 
 ## Desarrollo local
 
@@ -23,9 +26,11 @@ Copy-Item .env.example .env
 
 Editar `.env`: cambiar la contraseña de ejemplo y reflejarla en ambas URLs. `DATABASE_URL` usa `localhost` para Python local; `DOCKER_DATABASE_URL` usa `timescaledb` para la red de Compose. El archivo `.env` no se versiona.
 
+El puerto local por defecto de la base es `5433`, para no interferir con una instalación de PostgreSQL que use `5432`.
+
 ```powershell
 docker compose up -d timescaledb
-.venv/Scripts/python.exe -m app.create_tables
+.venv/Scripts/alembic.exe upgrade head
 .venv/Scripts/python.exe -m uvicorn app.main:app --reload --host 127.0.0.1
 ```
 
@@ -37,7 +42,7 @@ docker compose up -d --build fit-parser
 
 API: [OpenAPI local](http://127.0.0.1:8000/docs). `GET /health` verifica TimescaleDB sin modificarla y devuelve 503 si no está disponible. No comprueba todo el esquema.
 
-El bootstrap crea tablas nuevas; **no migra bases existentes**. Antes de reutilizar una base antigua, respaldar y revisar su esquema y ubicación. El Compose actual fija `PGDATA` al volumen declarado: la configuración anterior de la imagen HA podía guardar datos en otra ubicación. Este refactor no movió ni eliminó datos ni volúmenes. No ejecutar `down -v` para resolver incompatibilidades.
+Alembic crea el esquema inicial en una base nueva y registra la versión aplicada. Antes de reutilizar una base existente, respaldar y revisar su esquema y ubicación. El Compose actual fija `PGDATA` al volumen declarado: la configuración anterior de la imagen HA podía guardar datos en otra ubicación. Este refactor no movió ni eliminó datos ni volúmenes. No ejecutar `down -v` para resolver incompatibilidades.
 
 ## Pruebas
 
@@ -46,7 +51,11 @@ cd backend/fit-parser
 .venv/Scripts/python.exe -m pytest -q
 ```
 
-Las pruebas no requieren una base activa: verifican métricas, SDK FIT real con archivos sintéticos, errores HTTP y límites transaccionales con una sesión simulada. No sustituyen la integración real PostgreSQL/TimescaleDB, pendiente de ejecutar con Docker activo. CI ejecuta estas pruebas en Python 3.11 y 3.12.
+Las pruebas no requieren una base activa: verifican métricas, SDK FIT real con archivos sintéticos, errores HTTP y límites transaccionales con una sesión simulada. En la validación local también se levantó PostgreSQL/TimescaleDB, se aplicó Alembic y `/health` respondió desde la API Docker. CI ejecuta estas pruebas en Python 3.11 y 3.12.
+
+## Frontend
+
+El monorepo de interfaz está en [`frontend`](frontend/README.md): NODO Lab usa Next.js para entrenadores y NODO usa Expo/React Native para atletas. Ambos consumen la misma API y comparten únicamente el cliente y los tipos HTTP. Consultar la [guía de frontend](docs/FRONTEND.md) antes de empezar una pantalla.
 
 ## Contrato de ingesta de desarrollo
 
@@ -58,6 +67,10 @@ Las pruebas no requieren una base activa: verifican métricas, SDK FIT real con 
 Sin perfil o sin resumen FIT con duración de cronómetro y FC media, `trimp_score` es `null` y `trimp_status` indica datos insuficientes. La duración usa `total_timer_time`; en su ausencia usa el intervalo entre registros e indica `record_elapsed`, que puede incluir pausas. No se asume un registro por segundo.
 
 Un archivo multisesión se rechaza explícitamente hasta implementar segmentación. Reimportar una actividad todavía puede duplicarla: idempotencia y vinculación con atleta son tareas de P0. La API de ingesta se deshabilita cuando `ENVIRONMENT` no es `development`.
+
+## API inicial de NODO
+
+La API ya incluye autenticación con sesiones rotables, invitación de atletas y planificación estructurada. Consultar [API_NODO.md](docs/API_NODO.md) antes de comenzar NODO o NODO Lab. Por seguridad, el alta de entrenadores queda cerrada salvo que se defina explícitamente `ALLOW_COACH_REGISTRATION=true` en un entorno local. La invitación devuelve el token solo como soporte temporal de desarrollo; el envío de correo seguro se implementará antes de abrir un piloto.
 
 ## Colaboración
 

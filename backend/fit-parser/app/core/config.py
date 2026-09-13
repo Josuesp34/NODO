@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    PROJECT_NAME: str = "SaaS Entrenamiento Deportivo IA"
+    PROJECT_NAME: str = "NODO"
     ENVIRONMENT: str = "development"
     API_V1_STR: str = "/api/v1"
     DATABASE_URL: str

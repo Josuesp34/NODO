@@ -9,7 +9,7 @@ Se incorpora un refactor acotado y la base del MVP; aún no se construye el prod
 Cambios realizados:
 
 - Imports de modelos corregidos y registro de planes y métricas diarias en metadata.
-- Eliminada la inicialización duplicada/circular de `core`; bootstrap explícito único.
+- Eliminada la inicialización duplicada/circular de `core`; Alembic es la única vía de cambio de esquema.
 - Configuración de base de datos por entorno, ejemplo sin credenciales reales y puertos Compose ligados a localhost.
 - Health check de lectura, sin crear extensiones, con respuesta 503 ante indisponibilidad.
 - FIT: validación de contenido, tamaño, timestamps y rechazo explícito de multisesión; decodificación fuera del event loop.
@@ -22,7 +22,8 @@ Cambios realizados:
 - Autenticación con sesiones rotables, invitación y activación de atletas, y aislamiento entrenador-atleta.
 - Planeación por bloques y sesiones estructuradas, publicación y control de versiones para evitar sobrescrituras.
 - Migración inicial Alembic y contratos de API documentados.
-- Workspace inicial con NODO Lab (web) y NODO (Expo) sobre un cliente HTTP compartido.
+- Workspace inicial con NODO web y móvil; NODO Lab queda definido como módulo de entrenador sobre el cliente HTTP compartido.
+- Dependencias de frontend e imagen TimescaleDB fijadas para instalaciones reproducibles; CI valida backend, migraciones y frontend.
 
 ## Convenciones de cálculo
 
@@ -34,14 +35,14 @@ CTL/ATL son funciones aisladas, no un historial operativo. El código que las co
 
 ## Todavía pendiente
 
-Interfaz funcional de autenticación, calendario y editor de sesiones; asociación obligatoria actividad-atleta, idempotencia, cola de ingestión, conectores, datos diarios normalizados, reportes de molestias, notificaciones y copiloto. El servicio actual no recibe ni interpreta recuperación diaria ni reportes físicos; esos flujos quedan especificados en los documentos de producto y arquitectura.
+Calendario y editor de sesiones; identidad multirol y relaciones entrenador-atleta múltiples; asociación obligatoria actividad-atleta, idempotencia, cola de ingestión, conectores, datos diarios normalizados, reportes de molestias, notificaciones y copiloto. El servicio actual no recibe ni interpreta recuperación diaria ni reportes físicos; esos flujos quedan especificados en los documentos de producto y arquitectura.
 
 La base conserva actividad sin atleta para desarrollo; por ello la ingesta no está habilitada fuera de `development`. Esa restricción no sustituye autenticación y no convierte un despliegue público de desarrollo en seguro. El límite de lectura FIT tampoco reemplaza un límite de cuerpo HTTP en el proxy antes de parsear multipart.
 
-Las dependencias principales existentes se conservaron para limitar el refactor. Se deben revisar y actualizar antes del piloto externo. La imagen TimescaleDB sigue una etiqueta mutable del proyecto original; fijar una versión/digest tras validar Docker.
+La preparación para piloto tiene condiciones explícitas en `docs/PILOT_READINESS.md`; no abrir acceso externo hasta cumplirlas.
 
 ## Validación
 
-Las pruebas cubren cálculos, datos faltantes, muestreo irregular, FIT sintético con SDK real, rechazos HTTP, registro ORM, rollback, autenticación y planeación. En la validación actual, las 35 pruebas pasaron y se levantó TimescaleDB local, se aplicó la migración inicial y `GET /health` respondió 200 contra PostgreSQL real. También se comprobó CORS para NODO Lab en `http://localhost:3000`.
+Las pruebas cubren cálculos, datos faltantes, muestreo irregular, FIT sintético con SDK real, rechazos HTTP, registro ORM, rollback, autenticación y planeación. En la validación actual, las 36 pruebas pasaron y se levantó TimescaleDB local, se aplicaron las migraciones y `GET /health` respondió 200 contra PostgreSQL real. También se comprobó CORS para NODO en `http://localhost:3000`.
 
-Docker Desktop en Windows requiere preparar el volumen de la imagen HA con UID 1000; `timescaledb-init` lo hace automáticamente. La base local usa el puerto `5433`, porque `5432` estaba ocupado. El contenedor completo de la API queda por construir en una ejecución de Docker sin el límite de tiempo de esta sesión; la API se verificó con Uvicorn local conectado a la misma base.
+Docker Desktop en Windows requiere preparar el volumen de la imagen HA con UID 1000; `timescaledb-init` lo hace automáticamente. La base local usa el puerto `5433`, porque `5432` estaba ocupado. API y base se validaron en contenedores locales; esta configuración sigue siendo sólo de desarrollo.

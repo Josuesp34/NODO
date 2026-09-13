@@ -32,7 +32,7 @@ async def issue_session(db: AsyncSession, user: User) -> TokenPair:
 @router.post("/coaches", response_model=UserView, status_code=status.HTTP_201_CREATED)
 async def register_coach(payload: CoachRegistration, db: AsyncSession = Depends(get_db)):
     """Solo bootstrap de desarrollo; producción necesita una ruta administrativa."""
-    if not settings.ALLOW_COACH_REGISTRATION:
+    if settings.ENVIRONMENT != "development" or not settings.ALLOW_COACH_REGISTRATION:
         raise HTTPException(403, "El alta de entrenadores está cerrada")
     user = User(
         email=payload.email, first_name=payload.first_name, last_name=payload.last_name,

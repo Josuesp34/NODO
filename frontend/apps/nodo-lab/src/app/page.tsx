@@ -69,7 +69,6 @@ export default function Home() {
     try {
       const tokens = await new NodoApiClient(apiUrl).login(email, password);
       const user = await new NodoApiClient(apiUrl, tokens.access_token).me();
-      if (user.role !== "coach") throw new NodoApiError(403, "Esta cuenta es de atleta. Ingresa desde la aplicación NODO.");
       const next = { ...tokens, user };
       window.sessionStorage.setItem(storageKey, JSON.stringify(next));
       setSession(next);
@@ -89,22 +88,22 @@ export default function Home() {
   if (!ready) return <main className="loading">Abriendo NODO Lab…</main>;
   if (session) return (
     <main className="workspace">
-      <header><p className="eyebrow">NODO LAB</p><button className="textButton" onClick={signOut}>Cerrar sesión</button></header>
-      <section className="welcome"><p className="label">SESIÓN ACTIVA</p><h1>Hola, {session.user.first_name}.</h1><p>Tu cuenta de entrenador está conectada. El siguiente corte construirá el calendario y el editor de sesiones.</p>{session.user.is_superuser && <p className="adminBadge">Superusuario de desarrollo</p>}</section>
-      <section className="nextStep"><span>01</span><div><h2>Atletas y calendario</h2><p>La interfaz ya tiene una sesión real. Falta el endpoint de lista de atletas para mostrar tu equipo.</p></div></section>
+      <header><p className="eyebrow">NODO</p><button className="textButton" onClick={signOut}>Cerrar sesión</button></header>
+      <section className="welcome"><p className="label">SESIÓN ACTIVA</p><h1>Hola, {session.user.first_name}.</h1><p>{session.user.role === "coach" ? "NODO Lab es tu módulo de planeación. El siguiente corte construirá el calendario y el editor de sesiones." : "Tu espacio NODO mostrará entrenamiento, recuperación y ejecución. La experiencia de atleta sigue en construcción."}</p>{session.user.is_superuser && <p className="adminBadge">Superusuario de desarrollo</p>}</section>
+      <section className="nextStep"><span>01</span><div><h2>{session.user.role === "coach" ? "NODO Lab · atletas y calendario" : "Mi NODO · entrenamiento del día"}</h2><p>{session.user.role === "coach" ? "La interfaz ya tiene una sesión real. Falta el endpoint de lista de atletas para mostrar tu equipo." : "El contrato de sesiones publicadas ya existe; la pantalla móvil será el siguiente módulo."}</p></div></section>
     </main>
   );
 
   return (
     <main className="authPage">
-      <section className="intro"><p className="eyebrow">NODO LAB</p><h1>Planeación humana, asistida por datos.</h1><p>Organiza el entrenamiento y decide cada ajuste con el contexto de tus atletas.</p></section>
+      <section className="intro"><p className="eyebrow">NODO</p><h1>Tu entrenamiento. Tu equipo. Tu progreso.</h1><p>NODO reúne la experiencia del atleta y NODO Lab, el módulo de planeación para entrenadores.</p></section>
       <form className="loginCard" onSubmit={submit}>
-        <div><p className="label">ACCESO DE ENTRENADOR</p><h2>Inicia sesión</h2></div>
+        <div><p className="label">ACCESO NODO</p><h2>Inicia sesión</h2></div>
         <label>Correo<input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></label>
         <label>Contraseña<input type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required /></label>
         {error && <p className="error" role="alert">{error}</p>}
-        <button className="primary" type="submit" disabled={submitting}>{submitting ? "Conectando…" : "Entrar a NODO Lab"}</button>
-        <p className="helper">El alta de entrenadores se habilita sólo en desarrollo. Las cuentas de atleta usan NODO móvil.</p>
+        <button className="primary" type="submit" disabled={submitting}>{submitting ? "Conectando…" : "Entrar a NODO"}</button>
+        <p className="helper">NODO Lab aparece para cuentas de entrenador. Las capacidades múltiples se incorporarán antes de abrir pilotos.</p>
       </form>
     </main>
   );

@@ -20,3 +20,6 @@ jobs:
           cache-dependency-path: backend/fit-parser/requirements*.txt
       - run: python -m pip install -r requirements-dev.txt
       - run: python -m pytest -q
+      - run: alembic -c alembic.ini upgrade head --sql > /dev/null
+        env:
+          DATABASE_URL: postgresql+asyncpg://nodo:nodo@localhost:5432/nodo

@@ -12,6 +12,8 @@ services:
       ENVIRONMENT: development
       DATABASE_URL: ${DOCKER_DATABASE_URL:?Configurar DOCKER_DATABASE_URL en .env}
       ALLOW_COACH_REGISTRATION: ${ALLOW_COACH_REGISTRATION:-false}
+      ALLOW_SUPERUSER_BOOTSTRAP: ${ALLOW_SUPERUSER_BOOTSTRAP:-false}
+      DEV_SUPERUSER_BOOTSTRAP_TOKEN: ${DEV_SUPERUSER_BOOTSTRAP_TOKEN:-}
     depends_on:
       timescaledb:
         condition: service_healthy

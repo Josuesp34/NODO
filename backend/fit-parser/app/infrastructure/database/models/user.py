@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import List, TYPE_CHECKING, Optional
-from sqlalchemy import String, Enum as SQLEnum, ForeignKey
+from sqlalchemy import Boolean, String, Enum as SQLEnum, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.infrastructure.database.models.base import Base, TimestampMixin
 
@@ -26,6 +26,8 @@ class User(Base, TimestampMixin):
         default=UserRole.ATHLETE,
         nullable=False
     )
+    # Operador de plataforma. No sustituye los roles de producto del usuario.
+    is_superuser: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
 
     # Jerarquía: un atleta puede tener un coach
     coach_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)

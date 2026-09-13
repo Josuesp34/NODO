@@ -8,6 +8,7 @@ export type Identity = {
   timezone: string;
   role: UserRole;
   coach_id: number | null;
+  is_superuser: boolean;
 };
 
 export type TokenPair = {

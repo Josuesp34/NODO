@@ -90,7 +90,7 @@ export default function Home() {
   if (session) return (
     <main className="workspace">
       <header><p className="eyebrow">NODO LAB</p><button className="textButton" onClick={signOut}>Cerrar sesión</button></header>
-      <section className="welcome"><p className="label">SESIÓN ACTIVA</p><h1>Hola, {session.user.first_name}.</h1><p>Tu cuenta de entrenador está conectada. El siguiente corte construirá el calendario y el editor de sesiones.</p></section>
+      <section className="welcome"><p className="label">SESIÓN ACTIVA</p><h1>Hola, {session.user.first_name}.</h1><p>Tu cuenta de entrenador está conectada. El siguiente corte construirá el calendario y el editor de sesiones.</p>{session.user.is_superuser && <p className="adminBadge">Superusuario de desarrollo</p>}</section>
       <section className="nextStep"><span>01</span><div><h2>Atletas y calendario</h2><p>La interfaz ya tiene una sesión real. Falta el endpoint de lista de atletas para mostrar tu equipo.</p></div></section>
     </main>
   );

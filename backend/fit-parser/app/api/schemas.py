@@ -49,6 +49,7 @@ class UserView(Identity):
     id: int
     role: str
     coach_id: int | None
+    is_superuser: bool
 
 
 class Login(Contract):

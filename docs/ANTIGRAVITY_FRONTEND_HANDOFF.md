@@ -19,6 +19,8 @@ La marca se escribe **NODO** para el atleta y **NODO Lab** para el entrenador.
 
 El backend ya implementa autenticación, sesiones opacas con rotación de refresh token, relación entrenador-atleta, invitaciones de atleta, bloques y sesiones estructuradas con publicación y control de versión. La autorización se comprueba en el servidor; la interfaz no debe sustituirla con ocultar botones.
 
+También existe `is_superuser` para el equipo de desarrollo. Se crea sólo mediante el bootstrap local protegido descrito en `API_NODO.md`; es una capacidad de plataforma y se mantiene separada de la futura combinación de capacidades de atleta y entrenador.
+
 Docker funciona en este equipo:
 
 - API: `http://127.0.0.1:8000`

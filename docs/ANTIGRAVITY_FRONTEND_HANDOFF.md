@@ -137,4 +137,4 @@ No modificar esquemas de backend ni añadir una biblioteca de estado, componente
 - `docs/ARQUITECTURA.md`: entidades y límites futuros.
 - `docs/ESTADO_TECNICO.md`: decisiones y validación del backend.
 - `frontend/README.md`: comandos de desarrollo.
-- `backend/fit-parser/tests/test_nodo_api.py`: flujos reales de autenticación, invitación, permisos, publicación y conflictos.
+- `backend/fit-parser/tests/api/test_identity_and_planning.py`: flujos reales de autenticación, invitación, permisos, publicación y conflictos.

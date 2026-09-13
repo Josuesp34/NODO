@@ -20,6 +20,7 @@ class User(Base, TimestampMixin):
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)
     last_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    timezone: Mapped[str] = mapped_column(String(64), default="UTC", server_default="UTC")
     role: Mapped[UserRole] = mapped_column(
         SQLEnum(UserRole),
         default=UserRole.ATHLETE,

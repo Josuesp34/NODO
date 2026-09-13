@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, TYPE_CHECKING
-from sqlalchemy import String, Float, Integer, DateTime, ForeignKey, Index
+from sqlalchemy import String, Float, Integer, DateTime, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.infrastructure.database.models.base import Base, TimestampMixin
 
@@ -26,6 +26,10 @@ class PrescribedWorkout(Base, TimestampMixin):
 
     # Tipo de deporte (Natación, Ciclismo, Carrera, etc)
     sport_type: Mapped[str] = mapped_column(String(50), default="running")
+    block_id: Mapped[Optional[int]] = mapped_column(ForeignKey("training_blocks.id"), nullable=True)
+    steps: Mapped[list] = mapped_column(JSON, default=list, server_default="[]")
+    status: Mapped[str] = mapped_column(String(20), default="draft", server_default="draft")
+    version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
 
     athlete: Mapped["User"] = relationship("User", foreign_keys=[athlete_id])
     coach: Mapped[Optional["User"]] = relationship("User", foreign_keys=[coach_id])

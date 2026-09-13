@@ -46,6 +46,12 @@ async def current_coach(user: User = Depends(current_user)) -> User:
     return user
 
 
+async def current_superuser(user: User = Depends(current_user)) -> User:
+    if not user.is_superuser:
+        raise HTTPException(403, "Esta acción requiere un superusuario")
+    return user
+
+
 async def accessible_athlete(db: AsyncSession, user: User, athlete_id: int) -> User:
     query = select(User).where(User.id == athlete_id, User.role == UserRole.ATHLETE)
     if user.role == UserRole.COACH:

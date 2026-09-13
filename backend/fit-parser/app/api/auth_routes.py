@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -32,11 +32,40 @@ async def issue_session(db: AsyncSession, user: User) -> TokenPair:
 @router.post("/coaches", response_model=UserView, status_code=status.HTTP_201_CREATED)
 async def register_coach(payload: CoachRegistration, db: AsyncSession = Depends(get_db)):
     """Solo bootstrap de desarrollo; producción necesita una ruta administrativa."""
-    if not settings.ALLOW_COACH_REGISTRATION:
+    if settings.ENVIRONMENT != "development" or not settings.ALLOW_COACH_REGISTRATION:
         raise HTTPException(403, "El alta de entrenadores está cerrada")
     user = User(
         email=payload.email, first_name=payload.first_name, last_name=payload.last_name,
         timezone=payload.timezone, role=UserRole.COACH, hashed_password=hash_password(payload.password),
+    )
+    db.add(user)
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(409, "No se pudo crear la cuenta") from None
+    await db.refresh(user)
+    return user_view(user)
+
+
+@router.post("/superusers", response_model=UserView, status_code=status.HTTP_201_CREATED)
+async def register_superuser(
+    payload: CoachRegistration,
+    bootstrap_token: str | None = Header(default=None, alias="X-NODO-Development-Key"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Bootstrap local, protegido por un secreto fuera de Git y deshabilitado por defecto."""
+    if (
+        settings.ENVIRONMENT != "development"
+        or not settings.ALLOW_SUPERUSER_BOOTSTRAP
+        or not settings.DEV_SUPERUSER_BOOTSTRAP_TOKEN
+        or bootstrap_token != settings.DEV_SUPERUSER_BOOTSTRAP_TOKEN
+    ):
+        raise HTTPException(403, "El bootstrap de superusuarios está cerrado")
+    user = User(
+        email=payload.email, first_name=payload.first_name, last_name=payload.last_name,
+        timezone=payload.timezone, role=UserRole.COACH, is_superuser=True,
+        hashed_password=hash_password(payload.password),
     )
     db.add(user)
     try:

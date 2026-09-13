@@ -131,3 +131,23 @@ def test_invalid_workout_contract_is_rejected_before_write(nodo_api):
     invalid["steps"][0]["steps"][1]["target"]["unit"] = "watts"
     response = nodo_api.post(f"/api/v1/athletes/{athlete['id']}/workouts", headers=headers, json=invalid)
     assert response.status_code == 422
+
+
+def test_development_superuser_bootstrap_requires_explicit_secret(nodo_api, monkeypatch):
+    payload = coach_payload("operator@nodo.com")
+    assert nodo_api.post("/api/v1/auth/superusers", json=payload).status_code == 403
+
+    monkeypatch.setattr(settings, "ALLOW_SUPERUSER_BOOTSTRAP", True)
+    monkeypatch.setattr(settings, "DEV_SUPERUSER_BOOTSTRAP_TOKEN", "local-bootstrap-key")
+    created = nodo_api.post(
+        "/api/v1/auth/superusers", json=payload,
+        headers={"X-NODO-Development-Key": "local-bootstrap-key"},
+    )
+    assert created.status_code == 201
+    assert created.json()["is_superuser"] is True
+    assert created.json()["role"] == "coach"
+
+    tokens = nodo_api.post("/api/v1/auth/login", json={"email": payload["email"], "password": payload["password"]})
+    me = nodo_api.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {tokens.json()['access_token']}"})
+    assert me.status_code == 200
+    assert me.json()["is_superuser"] is True

@@ -12,13 +12,15 @@ services:
       ENVIRONMENT: development
       DATABASE_URL: ${DOCKER_DATABASE_URL:?Configurar DOCKER_DATABASE_URL en .env}
       ALLOW_COACH_REGISTRATION: ${ALLOW_COACH_REGISTRATION:-false}
+      ALLOW_SUPERUSER_BOOTSTRAP: ${ALLOW_SUPERUSER_BOOTSTRAP:-false}
+      DEV_SUPERUSER_BOOTSTRAP_TOKEN: ${DEV_SUPERUSER_BOOTSTRAP_TOKEN:-}
     depends_on:
       timescaledb:
         condition: service_healthy
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   timescaledb:
-    image: timescale/timescaledb-ha:pg15-latest
+    image: timescale/timescaledb-ha@sha256:a8e3322e1cf936828698cb4de2a9c4b59acae1b123909f023bb15f42270af95d
     environment:
       POSTGRES_DB: ${POSTGRES_DB:?Configurar POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER:?Configurar POSTGRES_USER}

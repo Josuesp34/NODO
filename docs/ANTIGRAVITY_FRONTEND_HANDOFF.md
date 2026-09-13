@@ -19,6 +19,8 @@ La marca se escribe **NODO** para el atleta y **NODO Lab** para el entrenador.
 
 El backend ya implementa autenticación, sesiones opacas con rotación de refresh token, relación entrenador-atleta, invitaciones de atleta, bloques y sesiones estructuradas con publicación y control de versión. La autorización se comprueba en el servidor; la interfaz no debe sustituirla con ocultar botones.
 
+También existe `is_superuser` para el equipo de desarrollo. Se crea sólo mediante el bootstrap local protegido descrito en `API_NODO.md`; es una capacidad de plataforma y se mantiene separada de la futura combinación de capacidades de atleta y entrenador.
+
 Docker funciona en este equipo:
 
 - API: `http://127.0.0.1:8000`
@@ -34,7 +36,7 @@ Las 35 pruebas actuales del backend pasan con `backend/fit-parser/.venv/Scripts/
 
 Existe una base mínima, deliberadamente sin pantallas de producto terminadas:
 
-- NODO Lab muestra una pantalla raíz en `frontend/apps/nodo-lab/src/app/page.tsx`.
+- NODO Lab tiene inicio/cierre de sesión real en `frontend/apps/nodo-lab/src/app/page.tsx`: usa `/auth/login`, `/auth/me`, `/auth/refresh` y `/auth/logout`; la sesión se limita a `sessionStorage` durante el prototipo.
 - NODO móvil muestra la pantalla de entrenamiento del día en `frontend/apps/nodo-mobile/app/index.tsx`.
 - `NodoApiClient` contiene un `GET` tipado y la lectura de sesiones; debe evolucionar junto al contrato de backend.
 - Las URLs se configuran en `frontend/.env.example`. Cada aplicación debe tener su `.env.local`, que no se versiona.
@@ -120,8 +122,8 @@ El frontend puede diseñar espacios y estados vacíos para esos flujos, pero deb
 ## Orden recomendado de implementación
 
 1. Terminar instalación, añadir lockfile y verificar `typecheck`.
-2. Completar `@nodo/api-client`: tipos de auth, bloques, sesión completa, errores HTTP y métodos `POST`/`PUT` tipados.
-3. Implementar sesión y guardado seguro de tokens en cada aplicación.
+2. Completar `@nodo/api-client` con tipos de bloques y métodos de planeación `POST`/`PUT` tipados.
+3. Implementar sesión y guardado seguro de tokens en NODO móvil.
 4. Construir NODO Lab: calendario y editor estructurado de borradores.
 5. Construir NODO móvil: activación, sesión y vista de entrenamiento publicado.
 6. Añadir pruebas de UI/cliente para refresh, 409 y restricciones por rol.
@@ -135,4 +137,4 @@ No modificar esquemas de backend ni añadir una biblioteca de estado, componente
 - `docs/ARQUITECTURA.md`: entidades y límites futuros.
 - `docs/ESTADO_TECNICO.md`: decisiones y validación del backend.
 - `frontend/README.md`: comandos de desarrollo.
-- `backend/fit-parser/tests/test_nodo_api.py`: flujos reales de autenticación, invitación, permisos, publicación y conflictos.
+- `backend/fit-parser/tests/api/test_identity_and_planning.py`: flujos reales de autenticación, invitación, permisos, publicación y conflictos.

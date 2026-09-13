@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "NODO Lab",
-  description: "Planeación y seguimiento para entrenadores.",
+  title: "NODO",
+  description: "Entrenamiento y planeación para atletas y entrenadores.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

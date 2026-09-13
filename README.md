@@ -8,6 +8,7 @@ Plataforma en desarrollo para que entrenadores planifiquen, personalicen y revis
 - [Arquitectura y contratos propuestos](docs/ARQUITECTURA.md).
 - [Contratos de la API base](docs/API_NODO.md).
 - [Guía de arranque de NODO Lab y NODO](docs/FRONTEND.md).
+- [Relevo de frontend para Antigravity](docs/ANTIGRAVITY_FRONTEND_HANDOFF.md).
 - [Estado técnico, decisiones del refactor y pendientes](docs/ESTADO_TECNICO.md).
 
 **Estado actual: base local de backend, no MVP listo para usuarios.** Ya incluye autenticación, relación entrenador-atleta y planificación estructurada. Todavía no hay interfaz, asociación obligatoria actividad-atleta, sincronización, copiloto, notificaciones ni gestión de molestias operativa. Los modelos de métricas diarias siguen siendo bocetos. No desplegar esta base como servicio público.

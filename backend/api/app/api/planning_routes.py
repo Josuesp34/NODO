@@ -104,7 +104,9 @@ async def replace_workout(
 ):
     await require_coached_athlete(athlete_id, coach, db)
     workout = await db.scalar(select(PrescribedWorkout).where(
-        PrescribedWorkout.id == workout_id, PrescribedWorkout.athlete_id == athlete_id, PrescribedWorkout.coach_id == coach.id,
+        PrescribedWorkout.id == workout_id,
+        PrescribedWorkout.athlete_id == athlete_id,
+        PrescribedWorkout.coach_id == coach.id,
     ))
     if workout is None:
         raise HTTPException(404, "Sesión no encontrada")
@@ -129,7 +131,9 @@ async def publish_workout(
 ):
     await require_coached_athlete(athlete_id, coach, db)
     workout = await db.scalar(select(PrescribedWorkout).where(
-        PrescribedWorkout.id == workout_id, PrescribedWorkout.athlete_id == athlete_id, PrescribedWorkout.coach_id == coach.id,
+        PrescribedWorkout.id == workout_id,
+        PrescribedWorkout.athlete_id == athlete_id,
+        PrescribedWorkout.coach_id == coach.id,
     ))
     if workout is None:
         raise HTTPException(404, "Sesión no encontrada")

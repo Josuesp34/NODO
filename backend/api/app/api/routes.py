@@ -13,6 +13,14 @@ from app.services.physiology import extract_session_metrics, valid_number
 router = APIRouter()
 
 
+def sensor_value(row, name, fallback=None, integer=False, minimum=0):
+    """Lee un sensor del registro FIT; la ausencia se conserva como nulo, no como cero."""
+    value = valid_number(row.get(name), minimum=minimum)
+    if value is None and fallback:
+        value = valid_number(row.get(fallback), minimum=minimum)
+    return int(value) if integer and value is not None else value
+
+
 def parse_fit(content: bytes):
     """Trabajo CPU fuera del event loop; multisesión pendiente de segmentación."""
     try:
@@ -82,21 +90,15 @@ async def upload_fit_file(
         await db.flush()
         telemetry = []
         for _, row in df.iterrows():
-            def sensor(name, fallback=None, integer=False, minimum=0):
-                value = valid_number(row.get(name), minimum=minimum)
-                if value is None and fallback:
-                    value = valid_number(row.get(fallback), minimum=minimum)
-                return int(value) if integer and value is not None else value
-
             telemetry.append(TelemetryRecord(
                 activity_id=activity.id,
                 timestamp=row["timestamp"].to_pydatetime(),
-                heart_rate=sensor("heart_rate", integer=True, minimum=1),
-                altitude=sensor("enhanced_altitude", "altitude", minimum=-15000),
-                speed_ms=sensor("enhanced_speed", "speed"),
-                cadence=sensor("cadence", integer=True),
-                power=sensor("power", integer=True),
-                temperature=sensor("temperature", integer=True, minimum=-100),
+                heart_rate=sensor_value(row, "heart_rate", integer=True, minimum=1),
+                altitude=sensor_value(row, "enhanced_altitude", "altitude", minimum=-15000),
+                speed_ms=sensor_value(row, "enhanced_speed", "speed"),
+                cadence=sensor_value(row, "cadence", integer=True),
+                power=sensor_value(row, "power", integer=True),
+                temperature=sensor_value(row, "temperature", integer=True, minimum=-100),
             ))
         db.add_all(telemetry)
         await db.commit()

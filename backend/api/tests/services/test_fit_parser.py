@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from garmin_fit_sdk import Encoder, Profile
@@ -8,7 +8,7 @@ from app.api.routes import parse_fit
 
 def make_fit(sessions=1):
     encoder = Encoder()
-    start = datetime(2026, 9, 1, tzinfo=timezone.utc)
+    start = datetime(2026, 9, 1, tzinfo=UTC)
     encoder.on_mesg(Profile['mesg_num']['FILE_ID'], {
         'manufacturer': 'development', 'product': 1, 'type': 'activity', 'time_created': start,
     })

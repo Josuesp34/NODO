@@ -1,5 +1,4 @@
 import asyncio
-from datetime import date
 
 import pytest
 from fastapi.testclient import TestClient
@@ -36,7 +35,13 @@ def nodo_api(monkeypatch):
 
 
 def coach_payload(email="coach@nodo.com"):
-    return {"email": email, "password": "A-long-local-password", "first_name": "Ana", "last_name": "Coach", "timezone": "America/Mexico_City"}
+    return {
+        "email": email,
+        "password": "A-long-local-password",
+        "first_name": "Ana",
+        "last_name": "Coach",
+        "timezone": "America/Mexico_City",
+    }
 
 
 def register_and_login(client, email="coach@nodo.com"):
@@ -60,7 +65,11 @@ def workout_payload(block_id=None):
         "block_id": block_id,
         "steps": [{"repetitions": 1, "steps": [
             {"kind": "warmup", "duration_sec": 900},
-            {"kind": "work", "distance_m": 1000, "target": {"metric": "pace", "unit": "sec_per_km", "minimum": 215, "maximum": 225}},
+            {
+                "kind": "work",
+                "distance_m": 1000,
+                "target": {"metric": "pace", "unit": "sec_per_km", "minimum": 215, "maximum": 225},
+            },
             {"kind": "cooldown", "duration_sec": 600},
         ]}],
     }
@@ -78,7 +87,8 @@ def test_coach_invites_athlete_activation_and_token_rotation(nodo_api):
     }).status_code == 400
     refreshed = nodo_api.post("/api/v1/auth/refresh", json={"refresh_token": activation.json()["refresh_token"]})
     assert refreshed.status_code == 200
-    assert nodo_api.post("/api/v1/auth/refresh", json={"refresh_token": activation.json()["refresh_token"]}).status_code == 401
+    reused_refresh = {"refresh_token": activation.json()["refresh_token"]}
+    assert nodo_api.post("/api/v1/auth/refresh", json=reused_refresh).status_code == 401
 
 
 def test_coach_can_list_only_owned_athletes(nodo_api):
@@ -114,9 +124,17 @@ def test_planning_owner_can_publish_and_athlete_can_read(nodo_api):
         "title": "Base", "start_date": "2026-09-28", "end_date": "2026-10-25",
     })
     assert block.status_code == 201
-    created = nodo_api.post(f"/api/v1/athletes/{athlete['id']}/workouts", headers=headers, json=workout_payload(block.json()["id"]))
+    created = nodo_api.post(
+        f"/api/v1/athletes/{athlete['id']}/workouts",
+        headers=headers,
+        json=workout_payload(block.json()["id"]),
+    )
     assert created.status_code == 201
-    published = nodo_api.post(f"/api/v1/athletes/{athlete['id']}/workouts/{created.json()['id']}/publish", headers=headers, json={"expected_version": 1})
+    published = nodo_api.post(
+        f"/api/v1/athletes/{athlete['id']}/workouts/{created.json()['id']}/publish",
+        headers=headers,
+        json={"expected_version": 1},
+    )
     assert published.status_code == 200
     assert published.json()["status"] == "published"
     athlete_activation = nodo_api.post("/api/v1/auth/athletes/activate", json={
@@ -129,11 +147,16 @@ def test_planning_owner_can_publish_and_athlete_can_read(nodo_api):
     assert own_calendar.status_code == 200
     assert own_calendar.json()[0]["status"] == "published"
     athlete_tokens = nodo_api.post("/api/v1/auth/athletes/activate", json={
-        "invitation_token": create_athlete(nodo_api, headers, "unused@nodo.com")["invitation_token"], "password": "A-third-long-password",
+        "invitation_token": create_athlete(nodo_api, headers, "unused@nodo.com")["invitation_token"],
+        "password": "A-third-long-password",
     })
     # Un atleta diferente no puede ver el calendario de otra persona.
     other_headers = {"Authorization": f"Bearer {athlete_tokens.json()['access_token']}"}
-    assert nodo_api.get(f"/api/v1/athletes/{athlete['id']}/workouts?start=2026-10-01&end=2026-10-02", headers=other_headers).status_code == 404
+    foreign_read = nodo_api.get(
+        f"/api/v1/athletes/{athlete['id']}/workouts?start=2026-10-01&end=2026-10-02",
+        headers=other_headers,
+    )
+    assert foreign_read.status_code == 404
 
 
 def test_coach_cannot_access_other_coach_athlete_or_overwrite_stale_version(nodo_api):
@@ -143,8 +166,9 @@ def test_coach_cannot_access_other_coach_athlete_or_overwrite_stale_version(nodo
     assert created.status_code == 201
     replacement = workout_payload()
     replacement["expected_version"] = 1
-    assert nodo_api.put(f"/api/v1/athletes/{athlete['id']}/workouts/{created.json()['id']}", headers=owner_headers, json=replacement).status_code == 200
-    assert nodo_api.put(f"/api/v1/athletes/{athlete['id']}/workouts/{created.json()['id']}", headers=owner_headers, json=replacement).status_code == 409
+    workout_url = f"/api/v1/athletes/{athlete['id']}/workouts/{created.json()['id']}"
+    assert nodo_api.put(workout_url, headers=owner_headers, json=replacement).status_code == 200
+    assert nodo_api.put(workout_url, headers=owner_headers, json=replacement).status_code == 409
     other_headers = register_and_login(nodo_api, "other-coach@nodo.com")
     assert nodo_api.get(f"/api/v1/athletes/{athlete['id']}/blocks", headers=other_headers).status_code == 404
 

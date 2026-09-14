@@ -3,9 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.routes import router
 from app.api.auth_routes import router as auth_router
 from app.api.planning_routes import router as planning_router
+from app.api.routes import router
 from app.core.config import settings
 from app.core.database import get_db
 

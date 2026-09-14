@@ -59,7 +59,10 @@ def test_classic_trimp_reference_values(is_male, expected):
     assert calculate_banister_trimp(60, 125, 50, 200, is_male) == expected
 
 
-@pytest.mark.parametrize("rest,maximum,average", [(100, 100, 120), (100, 90, 120), (50, 190, 200), (50, 190, float("nan"))])
+@pytest.mark.parametrize(
+    "rest,maximum,average",
+    [(100, 100, 120), (100, 90, 120), (50, 190, 200), (50, 190, float("nan"))],
+)
 def test_invalid_profile_or_hr_rejected(rest, maximum, average):
     with pytest.raises(ValueError):
         calculate_banister_trimp(60, average, rest, maximum, True)

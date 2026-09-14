@@ -1,7 +1,10 @@
 from enum import Enum
-from typing import List, TYPE_CHECKING, Optional
-from sqlalchemy import Boolean, String, Enum as SQLEnum, ForeignKey
+from typing import TYPE_CHECKING, Optional
+
+from sqlalchemy import Boolean, ForeignKey, String
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.infrastructure.database.models.base import Base, TimestampMixin
 
 # Importación condicional para el linter (Pylance)
@@ -30,11 +33,11 @@ class User(Base, TimestampMixin):
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
 
     # Jerarquía: un atleta puede tener un coach
-    coach_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
+    coach_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     coach: Mapped[Optional["User"]] = relationship("User", remote_side=[id], backref="athletes")
 
     # Relación uno a muchos con actividades
-    activities: Mapped[List["Activity"]] = relationship(
+    activities: Mapped[list["Activity"]] = relationship(
         "Activity",
         back_populates="athlete",
         cascade="all, delete-orphan"

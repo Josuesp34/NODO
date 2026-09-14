@@ -1,4 +1,4 @@
-# NODO/ NODO Lab 
+# NODO/ NODO Lab
 
 Plataforma en desarrollo para que entrenadores planifiquen, personalicen y revisen el entrenamiento de sus atletas, con datos de ejecución, descanso y molestias y ayuda de IA bajo aprobación humana. NODO es la experiencia del atleta y NODO Lab será la experiencia web del entrenador.
 

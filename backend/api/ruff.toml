@@ -1,0 +1,33 @@
+# Reglas de estilo del backend de NODO.
+# `ruff check` debe quedar limpio antes de abrir un PR (ver CONTRIBUTING.md).
+
+target-version = "py311"
+line-length = 120
+extend-exclude = [".venv"]
+
+[lint]
+select = ["E", "W", "F", "I", "B", "C4", "UP", "PIE", "RUF"]
+# UP042 propondría `StrEnum` para `UserRole`. Cambiar la clase base altera cómo
+# se compara y se serializa el rol, y el modelo de roles se rehace en la fase F1.
+ignore = ["UP042"]
+
+[lint.per-file-ignores]
+# Las migraciones aplicadas no se reescriben por estilo: su texto es historial.
+"migrations/versions/*.py" = ["E501"]
+
+[lint.flake8-bugbear]
+# En FastAPI la inyección de dependencias vive en los valores por defecto.
+extend-immutable-calls = [
+    "fastapi.Body",
+    "fastapi.Cookie",
+    "fastapi.Depends",
+    "fastapi.File",
+    "fastapi.Form",
+    "fastapi.Header",
+    "fastapi.Path",
+    "fastapi.Query",
+    "fastapi.Security",
+]
+
+[lint.isort]
+known-first-party = ["app"]

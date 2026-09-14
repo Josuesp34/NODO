@@ -1,10 +1,11 @@
 from datetime import datetime
+
 from sqlalchemy import DateTime, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
+
 class Base(DeclarativeBase):
     """Clase base para todos los modelos del sistema."""
-    pass
 
 class TimestampMixin:
     """Mixin para auditoría temporal estándar."""

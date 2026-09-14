@@ -30,7 +30,7 @@ class Identity(Contract):
         try:
             ZoneInfo(value)
         except (ZoneInfoNotFoundError, ValueError):
-            raise ValueError("Zona horaria IANA inválida")
+            raise ValueError("Zona horaria IANA inválida") from None
         return value
 
     @field_validator("first_name", "last_name")

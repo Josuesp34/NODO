@@ -1,7 +1,9 @@
 from datetime import date
-from typing import Optional, TYPE_CHECKING
-from sqlalchemy import Float, Integer, Date, ForeignKey, UniqueConstraint
+from typing import TYPE_CHECKING
+
+from sqlalchemy import Date, Float, ForeignKey, Integer, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.infrastructure.database.models.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
@@ -16,13 +18,13 @@ class DailyPhysiology(Base, TimestampMixin):
     date_recorded: Mapped[date] = mapped_column(Date, nullable=False, index=True)
 
     # Variabilidad de la Frecuencia Cardíaca y métricas de sueño
-    rmssd: Mapped[Optional[float]] = mapped_column(Float, nullable=True) # HRV en ms
-    resting_hr: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    sleep_score: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    sleep_duration_hours: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    rmssd: Mapped[float | None] = mapped_column(Float, nullable=True) # HRV en ms
+    resting_hr: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    sleep_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    sleep_duration_hours: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     # Estrés subjetivo (1-10)
-    perceived_stress: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    perceived_stress: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     __table_args__ = (
         UniqueConstraint('athlete_id', 'date_recorded', name='uix_athlete_date'),

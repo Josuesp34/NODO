@@ -1,7 +1,7 @@
 """Contraseñas Argon2 y sesiones revocables con tokens opacos aleatorios."""
 import hashlib
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError
@@ -13,7 +13,7 @@ DUMMY_PASSWORD_HASH = hasher.hash(secrets.token_urlsafe(32))
 
 
 def utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def token_hash(token: str) -> str:

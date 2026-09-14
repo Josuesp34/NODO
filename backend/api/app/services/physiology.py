@@ -2,8 +2,6 @@ import math
 
 import pandas as pd
 
-from app.domain.metrics import calculate_banister_trimp  # Compatibilidad: fuente única.
-
 
 def valid_number(value, minimum=0):
     if value is None:

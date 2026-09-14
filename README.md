@@ -13,6 +13,7 @@ Plataforma en desarrollo para que entrenadores planifiquen, personalicen y revis
 - [Guía de colaboración](CONTRIBUTING.md).
 - [Condiciones para abrir un piloto](docs/PILOT_READINESS.md).
 - [Estado técnico, decisiones del refactor y pendientes](docs/ESTADO_TECNICO.md).
+- [Pendientes del MVP, ruta crítica y criterios de prueba](docs/PENDIENTES_MVP.md).
 
 **Estado actual: fundación de MVP, no lista para usuarios externos.** Ya incluye autenticación, sesiones, planificación estructurada, migraciones, una entrada web NODO y NODO Lab como módulo de entrenador. Todavía faltan identidad multirol, asociación obligatoria actividad-atleta, sincronización, copiloto, notificaciones y gestión de molestias operativa. No desplegar esta base como servicio público.
 

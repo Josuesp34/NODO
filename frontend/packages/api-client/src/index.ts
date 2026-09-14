@@ -18,6 +18,12 @@ export type Athlete = Identity & {
   is_superuser: boolean;
 };
 
+export type AthleteInvitation = {
+  athlete: Athlete;
+  invitation_token: string;
+  invitation_expires_at: string;
+};
+
 export type TokenPair = {
   access_token: string;
   refresh_token: string;
@@ -112,6 +118,9 @@ export class NodoApiClient {
 
   me() { return this.request<Identity>("/auth/me"); }
   athletes() { return this.request<Athlete[]>("/auth/athletes"); }
+  inviteAthlete(payload: Pick<Identity, "email" | "first_name" | "last_name" | "timezone">) {
+    return this.request<AthleteInvitation>("/auth/athletes", { method: "POST", body: payload });
+  }
   blocks(athleteId: number) {
     return this.request<Block[]>(`/athletes/${athleteId}/blocks`);
   }

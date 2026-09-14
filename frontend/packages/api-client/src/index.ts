@@ -116,6 +116,10 @@ export class NodoApiClient {
     return this.request<TokenPair>("/auth/refresh", { method: "POST", body: { refresh_token: refreshToken } });
   }
 
+  activateAthlete(invitationToken: string, password: string) {
+    return this.request<TokenPair>("/auth/athletes/activate", { method: "POST", body: { invitation_token: invitationToken, password } });
+  }
+
   me() { return this.request<Identity>("/auth/me"); }
   athletes() { return this.request<Athlete[]>("/auth/athletes"); }
   inviteAthlete(payload: Pick<Identity, "email" | "first_name" | "last_name" | "timezone">) {

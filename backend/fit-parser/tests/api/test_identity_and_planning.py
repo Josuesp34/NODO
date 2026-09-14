@@ -158,6 +158,19 @@ def test_invalid_workout_contract_is_rejected_before_write(nodo_api):
     assert response.status_code == 422
 
 
+def test_workout_must_fit_inside_selected_block(nodo_api):
+    headers = register_and_login(nodo_api)
+    athlete = create_athlete(nodo_api, headers)["athlete"]
+    block = nodo_api.post(f"/api/v1/athletes/{athlete['id']}/blocks", headers=headers, json={
+        "title": "Base", "start_date": "2026-09-28", "end_date": "2026-10-25",
+    })
+    assert block.status_code == 201
+    invalid = workout_payload(block.json()["id"])
+    invalid["scheduled_date"] = "2026-11-01T07:00:00-06:00"
+    response = nodo_api.post(f"/api/v1/athletes/{athlete['id']}/workouts", headers=headers, json=invalid)
+    assert response.status_code == 422
+
+
 def test_development_superuser_bootstrap_requires_explicit_secret(nodo_api, monkeypatch):
     payload = coach_payload("operator@nodo.com")
     assert nodo_api.post("/api/v1/auth/superusers", json=payload).status_code == 403

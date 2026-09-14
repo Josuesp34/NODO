@@ -11,7 +11,7 @@ class DailyPhysiology(Base, TimestampMixin):
     """Métricas fisiológicas diarias para ajustar la carga de entrenamiento."""
     __tablename__ = "daily_physiology"
 
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
     athlete_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     date_recorded: Mapped[date] = mapped_column(Date, nullable=False, index=True)
 

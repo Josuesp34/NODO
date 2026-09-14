@@ -11,7 +11,7 @@ class PrescribedWorkout(Base, TimestampMixin):
     """Modelo para representar un entrenamiento planificado por el coach."""
     __tablename__ = "prescribed_workouts"
 
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
     athlete_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     coach_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 

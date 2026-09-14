@@ -53,7 +53,7 @@ async def list_blocks(
     return [block_view(item) for item in result]
 
 
-async def check_block(block_id: int | None, athlete_id: int, coach_id: int, db: AsyncSession):
+async def check_block(block_id: int | None, athlete_id: int, coach_id: int, scheduled_date: datetime, db: AsyncSession):
     if block_id is None:
         return
     block = await db.scalar(select(TrainingBlock).where(
@@ -61,6 +61,8 @@ async def check_block(block_id: int | None, athlete_id: int, coach_id: int, db: 
     ))
     if block is None:
         raise HTTPException(422, "El bloque no pertenece a este atleta")
+    if not block.start_date <= scheduled_date.date() <= block.end_date:
+        raise HTTPException(422, "La sesión debe quedar dentro de las fechas del bloque")
 
 
 @router.post("/workouts", response_model=WorkoutView, status_code=status.HTTP_201_CREATED)
@@ -68,7 +70,7 @@ async def create_workout(
     athlete_id: int, payload: WorkoutCreate, coach: User = Depends(current_coach), db: AsyncSession = Depends(get_db),
 ):
     await require_coached_athlete(athlete_id, coach, db)
-    await check_block(payload.block_id, athlete_id, coach.id, db)
+    await check_block(payload.block_id, athlete_id, coach.id, payload.scheduled_date, db)
     workout = PrescribedWorkout(
         athlete_id=athlete_id, coach_id=coach.id, title=payload.title, description=payload.description,
         scheduled_date=payload.scheduled_date, sport_type=payload.sport_type, block_id=payload.block_id,
@@ -110,7 +112,7 @@ async def replace_workout(
         raise HTTPException(409, "La sesión cambió; actualiza antes de guardar")
     if workout.status != "draft":
         raise HTTPException(409, "Solo se editan borradores en esta versión")
-    await check_block(payload.block_id, athlete_id, coach.id, db)
+    await check_block(payload.block_id, athlete_id, coach.id, payload.scheduled_date, db)
     for field in ("title", "description", "scheduled_date", "sport_type", "block_id"):
         setattr(workout, field, getattr(payload, field))
     workout.steps = serialize_steps(payload.steps)

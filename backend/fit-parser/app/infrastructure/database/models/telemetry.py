@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, TYPE_CHECKING
-from sqlalchemy import Float, Integer, DateTime, ForeignKey, PrimaryKeyConstraint
+from sqlalchemy import Float, Integer, DateTime, ForeignKey, Index, PrimaryKeyConstraint, desc
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.infrastructure.database.models.base import Base
 
@@ -24,6 +24,7 @@ class TelemetryRecord(Base):
 
     __table_args__ = (
         PrimaryKeyConstraint("activity_id", "timestamp"),
+        Index("telemetry_records_timestamp_idx", desc("timestamp")),
     )
 
     activity: Mapped["Activity"] = relationship("Activity", back_populates="telemetry_records")

@@ -18,6 +18,12 @@ export type Athlete = Identity & {
   is_superuser: boolean;
 };
 
+export type AthleteInvitation = {
+  athlete: Athlete;
+  invitation_token: string;
+  invitation_expires_at: string;
+};
+
 export type TokenPair = {
   access_token: string;
   refresh_token: string;
@@ -54,6 +60,18 @@ export type Workout = {
   block_id: number | null;
   steps: StepGroup[];
 };
+
+export type Block = {
+  id: number;
+  athlete_id: number;
+  coach_id: number;
+  title: string;
+  start_date: string;
+  end_date: string;
+};
+
+export type BlockInput = Omit<Block, "id" | "athlete_id" | "coach_id">;
+export type WorkoutInput = Omit<Workout, "id" | "athlete_id" | "coach_id" | "status" | "version">;
 
 export class NodoApiError extends Error {
   constructor(public readonly status: number, message: string) {
@@ -98,10 +116,33 @@ export class NodoApiClient {
     return this.request<TokenPair>("/auth/refresh", { method: "POST", body: { refresh_token: refreshToken } });
   }
 
+  activateAthlete(invitationToken: string, password: string) {
+    return this.request<TokenPair>("/auth/athletes/activate", { method: "POST", body: { invitation_token: invitationToken, password } });
+  }
+
   me() { return this.request<Identity>("/auth/me"); }
   athletes() { return this.request<Athlete[]>("/auth/athletes"); }
+  inviteAthlete(payload: Pick<Identity, "email" | "first_name" | "last_name" | "timezone">) {
+    return this.request<AthleteInvitation>("/auth/athletes", { method: "POST", body: payload });
+  }
+  blocks(athleteId: number) {
+    return this.request<Block[]>(`/athletes/${athleteId}/blocks`);
+  }
+  createBlock(athleteId: number, payload: BlockInput) {
+    return this.request<Block>(`/athletes/${athleteId}/blocks`, { method: "POST", body: payload });
+  }
   logout() { return this.request<void>("/auth/logout", { method: "POST" }); }
   workouts(athleteId: number, start: string, end: string) {
-    return this.request<Workout[]>(`/athletes/${athleteId}/workouts?start=${start}&end=${end}`);
+    const query = new URLSearchParams({ start, end });
+    return this.request<Workout[]>(`/athletes/${athleteId}/workouts?${query.toString()}`);
+  }
+  createWorkout(athleteId: number, payload: WorkoutInput) {
+    return this.request<Workout>(`/athletes/${athleteId}/workouts`, { method: "POST", body: payload });
+  }
+  replaceWorkout(athleteId: number, workoutId: number, payload: WorkoutInput & { expected_version: number }) {
+    return this.request<Workout>(`/athletes/${athleteId}/workouts/${workoutId}`, { method: "PUT", body: payload });
+  }
+  publishWorkout(athleteId: number, workoutId: number, expectedVersion: number) {
+    return this.request<Workout>(`/athletes/${athleteId}/workouts/${workoutId}/publish`, { method: "POST", body: { expected_version: expectedVersion } });
   }
 }

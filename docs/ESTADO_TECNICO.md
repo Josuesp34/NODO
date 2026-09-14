@@ -35,7 +35,7 @@ CTL/ATL son funciones aisladas, no un historial operativo. El código que las co
 
 ## Todavía pendiente
 
-Calendario y editor de sesiones; identidad multirol y relaciones entrenador-atleta múltiples; asociación obligatoria actividad-atleta, idempotencia, cola de ingestión, conectores, datos diarios normalizados, reportes de molestias, notificaciones y copiloto. El servicio actual no recibe ni interpreta recuperación diaria ni reportes físicos; esos flujos quedan especificados en los documentos de producto y arquitectura.
+El detalle operativo está en [PENDIENTES_MVP.md](PENDIENTES_MVP.md). Lo más urgente es presentar las sesiones publicadas en NODO web y móvil, consolidar refresh de sesión en el cliente y completar la edición de borradores. La identidad multirol avanzada, asociación obligatoria de actividad-atleta, idempotencia de ingesta, cola de trabajos, conectores, datos diarios normalizados, reportes de molestias, notificaciones y copiloto siguen fuera del MVP de prueba. El servicio actual no recibe ni interpreta recuperación diaria ni reportes físicos; esos flujos quedan especificados en los documentos de producto y arquitectura.
 
 La base conserva actividad sin atleta para desarrollo; por ello la ingesta no está habilitada fuera de `development`. Esa restricción no sustituye autenticación y no convierte un despliegue público de desarrollo en seguro. El límite de lectura FIT tampoco reemplaza un límite de cuerpo HTTP en el proxy antes de parsear multipart.
 
@@ -43,6 +43,6 @@ La preparación para piloto tiene condiciones explícitas en `docs/PILOT_READINE
 
 ## Validación
 
-Las pruebas cubren cálculos, datos faltantes, muestreo irregular, FIT sintético con SDK real, rechazos HTTP, registro ORM, rollback, autenticación y planeación. En la validación actual, las 36 pruebas pasaron y se levantó TimescaleDB local, se aplicaron las migraciones y `GET /health` respondió 200 contra PostgreSQL real. También se comprobó CORS para NODO en `http://localhost:3000`.
+Las pruebas cubren cálculos, datos faltantes, muestreo irregular, FIT sintético con SDK real, rechazos HTTP, registro ORM, rollback, autenticación y planeación. En la validación actual, las 39 pruebas pasaron, `alembic check` no detectó deriva de esquema, se levantó TimescaleDB local, se aplicaron las migraciones y `GET /health` respondió 200 contra PostgreSQL real. También se comprobó CORS para NODO en `http://localhost:3000`.
 
 Docker Desktop en Windows requiere preparar el volumen de la imagen HA con UID 1000; `timescaledb-init` lo hace automáticamente. La base local usa el puerto `5433`, porque `5432` estaba ocupado. API y base se validaron en contenedores locales; esta configuración sigue siendo sólo de desarrollo.

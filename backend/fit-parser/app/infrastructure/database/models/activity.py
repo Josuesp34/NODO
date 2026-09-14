@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 class Activity(Base, TimestampMixin):
     __tablename__ = "activities"
 
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
     # TEMPORAL: nullable=True hasta implementar el sistema de login
     athlete_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
 

@@ -107,7 +107,7 @@ No bloquear el primer piloto técnico con estas áreas:
 ## Validación vigente
 
 ```powershell
-cd backend/fit-parser
+cd backend/api
 .venv/Scripts/python.exe -m pytest tests -q
 .venv/Scripts/alembic.exe -c alembic.ini check
 

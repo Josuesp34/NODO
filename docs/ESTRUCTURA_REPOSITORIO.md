@@ -5,7 +5,7 @@ Esta es la estructura estable para el MVP. Cada cambio debe entrar en la capa qu
 ```text
 Saas-entrenamiento/
 ├── backend/
-│   └── fit-parser/
+│   └── api/
 │       ├── app/
 │       │   ├── api/              # HTTP, contratos y autorización
 │       │   ├── application/      # Casos de uso que coordinan dominio e infraestructura

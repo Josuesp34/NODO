@@ -11,7 +11,7 @@ El repositorio es un monorepo. Hay dos aplicaciones con una API y cuentas compar
 - `frontend/apps/nodo-lab`: Next.js, uso de escritorio para entrenadores.
 - `frontend/apps/nodo-mobile`: Expo/React Native, uso móvil para atletas.
 - `frontend/packages/api-client`: tipos y cliente HTTP común. Compartir contratos y lógica sin interfaz; no intentar reutilizar pantallas web en React Native.
-- `backend/fit-parser`: API FastAPI, PostgreSQL/TimescaleDB y migraciones Alembic.
+- `backend/api`: API FastAPI, PostgreSQL/TimescaleDB y migraciones Alembic.
 
 La marca se escribe **NODO** para el atleta y **NODO Lab** para el entrenador.
 
@@ -27,10 +27,10 @@ Docker funciona en este equipo:
 - Swagger/OpenAPI: `http://127.0.0.1:8000/docs`
 - Health: `GET http://127.0.0.1:8000/health` responde `200`.
 - TimescaleDB: `localhost:5433`; el puerto 5432 está ocupado por otro proceso local.
-- Servicios: desde `backend/fit-parser`, `docker compose up -d`.
-- Migración: `backend/fit-parser/.venv/Scripts/alembic.exe -c alembic.ini upgrade head`.
+- Servicios: desde `backend/api`, `docker compose up -d`.
+- Migración: `backend/api/.venv/Scripts/alembic.exe -c alembic.ini upgrade head`.
 
-Las 35 pruebas actuales del backend pasan con `backend/fit-parser/.venv/Scripts/python.exe -m pytest backend/fit-parser/tests -q`. La API Docker y CORS para `http://localhost:3000` se validaron hoy.
+Las 39 pruebas actuales del backend pasan con `backend/api/.venv/Scripts/python.exe -m pytest -q` desde `backend/api`. La API Docker y CORS para `http://localhost:3000` se validaron hoy.
 
 ## Estado del frontend
 
@@ -137,4 +137,4 @@ No modificar esquemas de backend ni añadir una biblioteca de estado, componente
 - `docs/ARQUITECTURA.md`: entidades y límites futuros.
 - `docs/ESTADO_TECNICO.md`: decisiones y validación del backend.
 - `frontend/README.md`: comandos de desarrollo.
-- `backend/fit-parser/tests/api/test_identity_and_planning.py`: flujos reales de autenticación, invitación, permisos, publicación y conflictos.
+- `backend/api/tests/api/test_identity_and_planning.py`: flujos reales de autenticación, invitación, permisos, publicación y conflictos.

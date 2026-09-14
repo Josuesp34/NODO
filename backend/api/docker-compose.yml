@@ -1,6 +1,6 @@
 # Entorno exclusivamente local. Copiar .env.example a .env antes de arrancar.
 services:
-  fit-parser:
+  api:
     build:
       context: .
       dockerfile: Dockerfile

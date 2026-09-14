@@ -22,7 +22,7 @@ Plataforma en desarrollo para que entrenadores planifiquen, personalicen y revis
 Python 3.11 o 3.12 y Docker Desktop con motor Linux activo. Desde la raíz del repositorio, en PowerShell:
 
 ```powershell
-cd backend/fit-parser
+cd backend/api
 python -m venv .venv
 .venv/Scripts/python.exe -m pip install -r requirements-dev.txt
 Copy-Item .env.example .env
@@ -41,7 +41,7 @@ docker compose up -d timescaledb
 Para ejecutar también la API en contenedor, una vez inicializada la base y sin la API local ocupando el puerto:
 
 ```powershell
-docker compose up -d --build fit-parser
+docker compose up -d --build api
 ```
 
 API: [OpenAPI local](http://127.0.0.1:8000/docs). `GET /health` verifica TimescaleDB sin modificarla y devuelve 503 si no está disponible. No comprueba todo el esquema.
@@ -51,7 +51,7 @@ Alembic crea el esquema inicial en una base nueva y registra la versión aplicad
 ## Pruebas
 
 ```powershell
-cd backend/fit-parser
+cd backend/api
 .venv/Scripts/python.exe -m pytest -q
 ```
 

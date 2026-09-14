@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import current_session, current_user
+from app.api.dependencies import current_coach, current_session, current_user
 from app.api.schemas import (
     ActivateAthlete, AthleteCreated, CoachRegistration, Identity, Login, RefreshRequest, TokenPair, UserView,
 )
@@ -141,6 +141,14 @@ async def invite_athlete(payload: Identity, coach: User = Depends(current_user),
     return AthleteCreated(
         athlete=user_view(athlete), invitation_token=invitation_token, invitation_expires_at=invitation.expires_at,
     )
+
+
+@router.get("/athletes", response_model=list[UserView])
+async def list_athletes(coach: User = Depends(current_coach), db: AsyncSession = Depends(get_db)):
+    result = await db.scalars(
+        select(User).where(User.coach_id == coach.id, User.role == UserRole.ATHLETE).order_by(User.last_name, User.first_name, User.id)
+    )
+    return [user_view(athlete) for athlete in result.all()]
 
 
 @router.post("/athletes/activate", response_model=TokenPair)

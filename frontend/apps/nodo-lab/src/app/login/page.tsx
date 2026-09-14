@@ -1,0 +1,20 @@
+"use client";
+
+import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Identity, NodoApiClient, NodoApiError, TokenPair } from "@nodo/api-client";
+
+type StoredSession = TokenPair & { user: Identity };
+const storageKey = "nodo.lab.session";
+const apiUrl = process.env.NEXT_PUBLIC_NODO_API_URL ?? "http://127.0.0.1:8000/api/v1";
+function messageFor(error: unknown) { if (error instanceof NodoApiError) { if (error.status === 401) return "Correo, contraseña o sesión inválidos."; if (error.status === 403) return "Esta cuenta no tiene acceso a NODO."; return error.message; } return "No fue posible conectar con NODO. Verifica que la API esté activa."; }
+function SignalMark() { return <span className="signalMark" aria-hidden="true"><i /><i /><i /></span>; }
+function SystemMeta() { return <div className="systemMeta" aria-hidden="true"><span>NL / 01</span><span className="metaLine" /><span>TRAINING OS</span></div>; }
+
+export default function Login() {
+  const router = useRouter(); const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [error, setError] = useState<string | null>(null); const [submitting, setSubmitting] = useState(false); const [ready, setReady] = useState(false);
+  useEffect(() => { const raw = window.sessionStorage.getItem(storageKey); if (!raw) { setReady(true); return; } try { const stored = JSON.parse(raw) as StoredSession; void new NodoApiClient(apiUrl, stored.access_token).me().then(() => router.replace("/nodo")).catch(() => { window.sessionStorage.removeItem(storageKey); setReady(true); }); } catch { window.sessionStorage.removeItem(storageKey); setReady(true); } }, [router]);
+  async function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); setError(null); setSubmitting(true); try { const tokens = await new NodoApiClient(apiUrl).login(email, password); const user = await new NodoApiClient(apiUrl, tokens.access_token).me(); window.sessionStorage.setItem(storageKey, JSON.stringify({ ...tokens, user })); router.replace("/nodo"); } catch (loginError) { setError(messageFor(loginError)); } finally { setSubmitting(false); } }
+  if (!ready) return <main className="loading"><SignalMark /><span>INICIALIZANDO NODO</span></main>;
+  return <main className="appShell authShell"><SystemMeta /><div className="orb orbOne" /><div className="orb orbTwo" /><header className="topbar"><a className="brand" href="/"><span className="brandDot" />NODO</a><span className="headerNote">ACCESS / PERFORMANCE / PROGRESS</span></header><section className="authGrid"><div className="authIntro"><div className="heroKicker"><span>01</span> WELCOME TO THE NODE</div><h1>Vuelve a<br /><em>tu ritmo.</em></h1><p>Tu entrenamiento, tu equipo y la dirección de tu próxima sesión. Todo empieza aquí.</p><div className="introRail"><span>SECURE ACCESS</span><i /></div></div><form className="loginCard" onSubmit={submit}><div className="cardTop"><div><p className="eyebrow">ACCESS NODE / 001</p><h2>Entra a<br />NODO.</h2></div><SignalMark /></div><label><span>IDENTIDAD</span><input type="email" autoComplete="email" placeholder="coach@nodo.run" value={email} onChange={(event) => setEmail(event.target.value)} required /></label><label><span>CLAVE DE ACCESO</span><input type="password" autoComplete="current-password" placeholder="••••••••••••" value={password} onChange={(event) => setPassword(event.target.value)} required /></label>{error && <p className="error" role="alert"><strong>!</strong>{error}</p>}<button className="primary" type="submit" disabled={submitting}><span>{submitting ? "VALIDANDO ACCESO" : "ENTRAR A NODO"}</span><b>↗</b></button><p className="helper">Acceso reservado para cuentas de NODO.<br />La sesión se mantiene sólo durante esta ventana.</p></form></section><div className="ticker" aria-hidden="true"><span>BUILD / PLAN / EXECUTE</span><span>BUILD / PLAN / EXECUTE</span></div><footer className="footerLine"><span>NODO TRAINING SYSTEMS / 2026</span><span>API <i /> READY</span></footer></main>;
+}

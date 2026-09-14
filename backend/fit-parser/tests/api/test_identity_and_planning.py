@@ -81,6 +81,31 @@ def test_coach_invites_athlete_activation_and_token_rotation(nodo_api):
     assert nodo_api.post("/api/v1/auth/refresh", json={"refresh_token": activation.json()["refresh_token"]}).status_code == 401
 
 
+def test_coach_can_list_only_owned_athletes(nodo_api):
+    owner_headers = register_and_login(nodo_api)
+    first = create_athlete(nodo_api, owner_headers, "first@nodo.com")["athlete"]
+    second = create_athlete(nodo_api, owner_headers, "second@nodo.com")["athlete"]
+
+    listed = nodo_api.get("/api/v1/auth/athletes", headers=owner_headers)
+    assert listed.status_code == 200
+    assert [athlete["id"] for athlete in listed.json()] == sorted([first["id"], second["id"]])
+    assert all(athlete["role"] == "athlete" for athlete in listed.json())
+
+    other_headers = register_and_login(nodo_api, "other-coach@nodo.com")
+    assert nodo_api.get("/api/v1/auth/athletes", headers=other_headers).json() == []
+
+    activation = nodo_api.post("/api/v1/auth/athletes/activate", json={
+        "invitation_token": create_athlete(nodo_api, owner_headers, "third@nodo.com")["invitation_token"],
+        "password": "A-third-long-password",
+    })
+    athlete_headers = {"Authorization": f"Bearer {activation.json()['access_token']}"}
+    assert nodo_api.get("/api/v1/auth/athletes", headers=athlete_headers).status_code == 403
+
+
+def test_listing_athletes_requires_authentication(nodo_api):
+    assert nodo_api.get("/api/v1/auth/athletes").status_code == 401
+
+
 def test_planning_owner_can_publish_and_athlete_can_read(nodo_api):
     headers = register_and_login(nodo_api)
     invitation = create_athlete(nodo_api, headers)

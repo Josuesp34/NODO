@@ -11,6 +11,13 @@ export type Identity = {
   is_superuser: boolean;
 };
 
+export type Athlete = Identity & {
+  id: number;
+  role: "athlete";
+  coach_id: number;
+  is_superuser: boolean;
+};
+
 export type TokenPair = {
   access_token: string;
   refresh_token: string;
@@ -92,6 +99,7 @@ export class NodoApiClient {
   }
 
   me() { return this.request<Identity>("/auth/me"); }
+  athletes() { return this.request<Athlete[]>("/auth/athletes"); }
   logout() { return this.request<void>("/auth/logout", { method: "POST" }); }
   workouts(athleteId: number, start: string, end: string) {
     return this.request<Workout[]>(`/athletes/${athleteId}/workouts?start=${start}&end=${end}`);

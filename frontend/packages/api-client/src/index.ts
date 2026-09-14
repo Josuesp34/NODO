@@ -55,6 +55,18 @@ export type Workout = {
   steps: StepGroup[];
 };
 
+export type Block = {
+  id: number;
+  athlete_id: number;
+  coach_id: number;
+  title: string;
+  start_date: string;
+  end_date: string;
+};
+
+export type BlockInput = Omit<Block, "id" | "athlete_id" | "coach_id">;
+export type WorkoutInput = Omit<Workout, "id" | "athlete_id" | "coach_id" | "status" | "version">;
+
 export class NodoApiError extends Error {
   constructor(public readonly status: number, message: string) {
     super(message);
@@ -100,8 +112,24 @@ export class NodoApiClient {
 
   me() { return this.request<Identity>("/auth/me"); }
   athletes() { return this.request<Athlete[]>("/auth/athletes"); }
+  blocks(athleteId: number) {
+    return this.request<Block[]>(`/athletes/${athleteId}/blocks`);
+  }
+  createBlock(athleteId: number, payload: BlockInput) {
+    return this.request<Block>(`/athletes/${athleteId}/blocks`, { method: "POST", body: payload });
+  }
   logout() { return this.request<void>("/auth/logout", { method: "POST" }); }
   workouts(athleteId: number, start: string, end: string) {
-    return this.request<Workout[]>(`/athletes/${athleteId}/workouts?start=${start}&end=${end}`);
+    const query = new URLSearchParams({ start, end });
+    return this.request<Workout[]>(`/athletes/${athleteId}/workouts?${query.toString()}`);
+  }
+  createWorkout(athleteId: number, payload: WorkoutInput) {
+    return this.request<Workout>(`/athletes/${athleteId}/workouts`, { method: "POST", body: payload });
+  }
+  replaceWorkout(athleteId: number, workoutId: number, payload: WorkoutInput & { expected_version: number }) {
+    return this.request<Workout>(`/athletes/${athleteId}/workouts/${workoutId}`, { method: "PUT", body: payload });
+  }
+  publishWorkout(athleteId: number, workoutId: number, expectedVersion: number) {
+    return this.request<Workout>(`/athletes/${athleteId}/workouts/${workoutId}/publish`, { method: "POST", body: { expected_version: expectedVersion } });
   }
 }

@@ -108,6 +108,7 @@ No bloquear el primer piloto técnico con estas áreas:
 
 ```powershell
 cd backend/api
+.venv/Scripts/python.exe -m ruff check .
 .venv/Scripts/python.exe -m pytest tests -q
 .venv/Scripts/alembic.exe -c alembic.ini check
 

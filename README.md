@@ -4,6 +4,8 @@ Plataforma en desarrollo para que entrenadores planifiquen, personalicen y revis
 
 ## Documentos para empezar juntos
 
+- [**Plan de ejecución hasta producto completo**](docs/PLAN_EJECUCION.md): las fases F0 a F13, las reglas que no se negocian y las compuertas humanas. Es lo primero que debe leer cualquier sesión de trabajo nueva.
+- [Decisiones de arquitectura (ADR)](docs/ADR/): identidad multirol, pipeline de ingesta, PWA única, sesión BFF, conector intervals.icu y cola sobre Postgres.
 - [Visión, alcance, objetivos y plan de ocho semanas](docs/PLAN_PRODUCTO.md).
 - [Arquitectura y contratos propuestos](docs/ARQUITECTURA.md).
 - [Contratos de la API base](docs/API_NODO.md).
@@ -48,12 +50,22 @@ API: [OpenAPI local](http://127.0.0.1:8000/docs). `GET /health` verifica Timesca
 
 Alembic crea el esquema inicial en una base nueva y registra la versión aplicada. Antes de reutilizar una base existente, respaldar y revisar su esquema y ubicación. El Compose actual fija `PGDATA` al volumen declarado: la configuración anterior de la imagen HA podía guardar datos en otra ubicación. Este refactor no movió ni eliminó datos ni volúmenes. No ejecutar `down -v` para resolver incompatibilidades.
 
-## Pruebas
+## Pruebas y estilo
 
 ```powershell
 cd backend/api
 .venv/Scripts/python.exe -m pytest -q
+.venv/Scripts/python.exe -m ruff check .
 ```
+
+`ruff` debe quedar limpio antes de abrir un PR; sus reglas están en `backend/api/ruff.toml`. Para que los ganchos corran solos en cada commit, una vez por clon y desde la raíz del repositorio:
+
+```powershell
+backend/api/.venv/Scripts/pre-commit.exe install
+backend/api/.venv/Scripts/pre-commit.exe run --all-files
+```
+
+Los ganchos rechazan `.env`, archivos FIT, `node_modules`, `__pycache__` y logs antes de que lleguen a Git.
 
 Las pruebas no requieren una base activa: verifican métricas, SDK FIT real con archivos sintéticos, errores HTTP y límites transaccionales con una sesión simulada. En la validación local también se levantó PostgreSQL/TimescaleDB, se aplicó Alembic y `/health` respondió desde la API Docker. CI ejecuta estas pruebas en Python 3.11 y 3.12.
 

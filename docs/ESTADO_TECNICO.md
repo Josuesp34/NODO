@@ -1,8 +1,24 @@
 # Base técnica de la nueva etapa
 
-13 de septiembre de 2026.
+Actualizado el 14 de septiembre de 2026, al cerrar la fase F0 de [`PLAN_EJECUCION.md`](PLAN_EJECUCION.md).
 
-## Alcance de la base actual
+## Fase F0 · Higiene, contratos y ADR
+
+Lo que cambió, y nada más que eso: no se tocó comportamiento, esquema ni contrato de API.
+
+- `backend/fit-parser` pasó a llamarse `backend/api`. La carpeta dejó de ser un extractor de archivos FIT hace varias entregas. Se actualizaron Compose (el servicio ahora es `api`), CI y toda la documentación.
+- `ruff` entra como linter del backend, con reglas en `backend/api/ruff.toml` y versión fijada en `requirements-dev.txt`. `ruff check` está limpio. Las correcciones fueron de estilo: orden de imports, `Optional[X]` a `X | None`, `List` a `list`, `timezone.utc` a `UTC` e imports muertos.
+- Tres arreglos de linter con algo de sustancia: `models/__init__.py` declara `__all__` (sus imports registran cada modelo en el metadata de SQLAlchemy y no son "imports muertos"); `sensor_value()` salió del bucle de telemetría en `app/api/routes.py`, donde se redefinía en cada registro; y el validador de zona horaria encadena `raise ... from None`.
+- `pre-commit` entra con higiene básica, `ruff` y un gancho que rechaza `.env`, archivos FIT, `node_modules`, `__pycache__`, `.next` y logs. El CI corre lo mismo en un workflow nuevo.
+- `.env.example` documenta las variables que el código ya lee y, en una sección aparte y comentada, las que cada fase futura necesitará. Están marcadas explícitamente como **no leídas todavía**.
+- ADR 0003 (PWA única), 0004 (sesión como BFF), 0005 (conector intervals.icu) y 0006 (cola sobre Postgres) quedan escritos, con estado, alternativas descartadas y la fase que los implementa. Ninguno está implementado.
+- `docs/PLAN_EJECUCION.md` vive en el repositorio y el README enlaza a él.
+
+Verificación de esta fase: 39 pruebas verdes, `ruff check` limpio, `pre-commit run --all-files` limpio, `npm run typecheck` y `npm run build:lab` verdes, y la cadena de migraciones 0001 → 0003 aplicada sobre una base PostgreSQL nueva. La comprobación contra TimescaleDB real queda en el guion de validación humana; el desvío está registrado en el plan.
+
+## Alcance de la base anterior
+
+13 de septiembre de 2026.
 
 Se incorpora un refactor acotado y la base del MVP; aún no se construye el producto completo.
 

@@ -1,6 +1,7 @@
 """Archivos privados, claves acotadas por atleta y errores sin credenciales."""
 
 import asyncio
+import os
 import re
 import tempfile
 from datetime import UTC, datetime
@@ -33,6 +34,14 @@ def local_root() -> Path:
     return Path(path).resolve()
 
 
+def local_target(key: str) -> Path:
+    root = str(local_root())
+    target = os.path.realpath(os.path.join(root, key))
+    if not target.startswith(root + os.sep):
+        raise ObjectStoreError("Archivo fuera del almacenamiento privado")
+    return Path(target)
+
+
 async def authorization() -> dict[str, str]:
     def token():
         import google.auth
@@ -61,7 +70,7 @@ async def put_file(key: str, content: bytes) -> None:
     if len(content) > settings.MAX_FIT_BYTES:
         raise ObjectStoreError("Archivo demasiado grande")
     if getattr(settings, "STORAGE_BACKEND", "none") == "local":
-        target = local_root() / key
+        target = local_target(key)
 
         def write():
             temporary = None
@@ -100,7 +109,7 @@ async def put_file(key: str, content: bytes) -> None:
 async def read_file(key: str) -> bytes:
     valid_key(key)
     if getattr(settings, "STORAGE_BACKEND", "none") == "local":
-        target = local_root() / key
+        target = local_target(key)
         try:
             with target.open("rb") as stream:
                 content = stream.read(settings.MAX_FIT_BYTES + 1)
@@ -130,7 +139,7 @@ async def read_file(key: str) -> bytes:
 async def delete_file(key: str, generation: str | None = None) -> None:
     valid_key(key)
     if getattr(settings, "STORAGE_BACKEND", "none") == "local":
-        (local_root() / key).unlink(missing_ok=True)
+        local_target(key).unlink(missing_ok=True)
         return
     if getattr(settings, "STORAGE_BACKEND", "none") != "gcs":
         raise ObjectStoreError("Almacenamiento privado no configurado")
@@ -152,7 +161,7 @@ async def inventory(prefix: str):
         raise ObjectStoreError("Prefijo de archivo inválido")
     if getattr(settings, "STORAGE_BACKEND", "none") == "local":
         root = local_root()
-        for path in (root / prefix).rglob("*"):
+        for path in local_target(prefix).rglob("*"):
             if path.is_file():
                 yield path.relative_to(root).as_posix(), datetime.fromtimestamp(path.stat().st_mtime, UTC), None
         return

@@ -54,6 +54,40 @@ def test_object_keys_reject_traversal_and_arbitrary_paths():
             valid_key(key)
 
 
+def test_local_store_rejects_symlink_escape_before_read_write_delete(tmp_path, monkeypatch):
+    private = tmp_path / "private"
+    outside = tmp_path / "outside"
+    (private / "fit").mkdir(parents=True)
+    outside.mkdir()
+    filename = "a" * 64 + ".fit"
+    (outside / filename).write_bytes(b"synthetic-outside")
+    (private / "fit/1").symlink_to(outside, target_is_directory=True)
+    monkeypatch.setattr(
+        object_store,
+        "settings",
+        SimpleNamespace(
+            STORAGE_BACKEND="local",
+            STORAGE_LOCAL_PATH=str(private),
+            ENVIRONMENT="development",
+            MAX_FIT_BYTES=1024,
+        ),
+    )
+
+    async def scenario():
+        for action in (
+            read_file("fit/1/" + filename),
+            put_file("fit/1/" + filename, b"replacement"),
+            object_store.delete_file("fit/1/" + filename),
+        ):
+            with pytest.raises(ObjectStoreError):
+                await action
+        with pytest.raises(ObjectStoreError):
+            await delete_athlete_files(1)
+        assert (outside / filename).read_bytes() == b"synthetic-outside"
+
+    asyncio.run(scenario())
+
+
 def test_gcs_contract_deletes_each_generation_only_in_owner_prefix(monkeypatch):
     monkeypatch.setattr(
         object_store,

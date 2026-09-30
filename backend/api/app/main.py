@@ -6,6 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.activity_routes import router as activity_router
 from app.api.assistant_routes import router as assistant_router
 from app.api.auth_routes import router as auth_router
+from app.api.file_routes import router as file_router
+from app.api.intervals_routes import router as intervals_router
+from app.api.operations_routes import router as operations_router
 from app.api.planning_routes import router as planning_router
 from app.api.product_routes import router as product_router
 from app.api.routes import router
@@ -30,6 +33,9 @@ def get_application() -> FastAPI:
     application.include_router(auth_router, prefix=settings.API_V1_STR)
     application.include_router(planning_router, prefix=settings.API_V1_STR)
     application.include_router(activity_router, prefix=settings.API_V1_STR)
+    application.include_router(file_router, prefix=settings.API_V1_STR)
+    application.include_router(intervals_router, prefix=settings.API_V1_STR)
+    application.include_router(operations_router, prefix=settings.API_V1_STR)
     application.include_router(product_router, prefix=settings.API_V1_STR)
     application.include_router(assistant_router, prefix=settings.API_V1_STR)
 

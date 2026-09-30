@@ -6,7 +6,7 @@ locals {
     managed-by  = "terraform"
   })
 
-  required_services = toset([
+  required_services = setunion(toset([
     "artifactregistry.googleapis.com",
     "billingbudgets.googleapis.com",
     "cloudresourcemanager.googleapis.com",
@@ -22,7 +22,7 @@ locals {
     "sqladmin.googleapis.com",
     "sts.googleapis.com",
     "storage.googleapis.com",
-  ])
+  ]), var.enable_vertex_ai ? toset(["aiplatform.googleapis.com"]) : toset([]))
 
   runtime_service_accounts = {
     api       = google_service_account.api.email
@@ -32,9 +32,9 @@ locals {
   }
 
   secret_bindings_by_service = {
-    api       = var.api_secret_bindings
+    api       = local.api_runtime_secrets
     pwa       = var.pwa_secret_bindings
-    worker    = var.worker_secret_bindings
+    worker    = local.worker_runtime_secrets
     migration = var.migration_secret_bindings
   }
 

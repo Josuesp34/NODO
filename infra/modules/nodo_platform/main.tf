@@ -66,9 +66,25 @@ resource "google_storage_bucket" "fit" {
     enabled = true
   }
 
+  # User erasure removes every generation; soft delete would secretly retain PII.
+  soft_delete_policy {
+    retention_duration_seconds = 0
+  }
+
   lifecycle_rule {
     condition {
-      age = var.fit_retention_days
+      age            = var.fit_retention_days
+      matches_prefix = ["fit/"]
+    }
+    action {
+      type = "Delete"
+    }
+  }
+
+  lifecycle_rule {
+    condition {
+      age            = var.export_retention_days
+      matches_prefix = ["export/"]
     }
     action {
       type = "Delete"
@@ -86,6 +102,10 @@ resource "google_storage_bucket" "exports" {
   public_access_prevention    = "enforced"
   force_destroy               = false
   labels                      = local.labels
+
+  soft_delete_policy {
+    retention_duration_seconds = 0
+  }
 
   lifecycle_rule {
     condition {
@@ -111,6 +131,11 @@ resource "google_storage_bucket" "logical_backups" {
 
   versioning {
     enabled = true
+  }
+
+  # Recovery copies have a separate, disclosed retention and erasure replay policy.
+  soft_delete_policy {
+    retention_duration_seconds = 604800
   }
 
   lifecycle_rule {
@@ -291,6 +316,12 @@ resource "google_storage_bucket_iam_member" "api_exports" {
   bucket = google_storage_bucket.exports.name
   role   = "roles/storage.objectAdmin"
   member = "serviceAccount:${google_service_account.api.email}"
+}
+
+resource "google_storage_bucket_iam_member" "worker_exports" {
+  bucket = google_storage_bucket.exports.name
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${google_service_account.worker.email}"
 }
 
 resource "google_project_service_identity" "cloud_sql" {

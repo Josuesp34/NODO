@@ -217,6 +217,8 @@ variable "managed_secret_ids" {
     "email-queue-key",
     "smtp-username",
     "smtp-password",
+    "web-push-private-key",
+    "push-encryption-key",
   ]
 }
 
@@ -260,6 +262,11 @@ variable "api_allow_unauthenticated" {
   description = "Debe permanecer false cuando el BFF sea la frontera pública."
   type        = bool
   default     = false
+
+  validation {
+    condition     = var.api_allow_unauthenticated == false
+    error_message = "La API permanece privada: únicamente la PWA recibe tráfico público."
+  }
 }
 
 variable "github_repository" {

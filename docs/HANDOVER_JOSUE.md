@@ -1,10 +1,13 @@
 # Handover de NODO con Josué
 
 Fecha: 29 de septiembre de 2026. Responsable de entrega: Brandon.
+Actualización de reparto: 30 de septiembre de 2026.
 
 **Objetivo:** entregar una versión compartida y reproducible del código, revisar con Josué lo que funciona y cerrar el recorrido hasta producción con evidencia. Brandon autorizó el PR completo, integración y despliegue; esa autorización ya está dada. La apertura a atletas reales conserva los criterios de `LANZAMIENTO.md`.
 
-**Estado:** código integrado y versión candidata publicada; proveedores reales y producción pendientes. Brandon no dispone de las respuestas sobre GCP, dominio, correo, OAuth e IA. Asigna a Josué el seguimiento de todo lo que falta, incluida la investigación, elección, creación y configuración de recursos inexistentes o sin confirmar. La recepción y aceptación de Josué aún deben registrarse.
+**Estado:** código integrado y versión candidata publicada; proveedores reales y producción pendientes. Brandon no dispone de las respuestas sobre GCP, dominio, correo, OAuth e IA. Josué coordina la resolución de esos datos, accesos y decisiones con sus propietarios. Nuestro equipo asume el desarrollo, pruebas, configuración y despliegue que puedan ejecutarse con los permisos correspondientes para reducir el trabajo técnico que recibe Josué. La recepción y aceptación de Josué aún deben registrarse.
+
+El reparto y la secuencia detallados están en [PLAN_CIERRE_PRE_HANDOVER.md](PLAN_CIERRE_PRE_HANDOVER.md). Es un plan de ejecución; no marca sus tareas nuevas como terminadas.
 
 ## 1. Qué se entrega
 
@@ -101,23 +104,23 @@ PY
 | Orden | Trabajo por cerrar | Responsable de seguimiento | Evidencia para cerrar |
 |---|---|---|---|
 | P0 · cerrado | Código completo integrado a `dev` y `main`; versión candidata publicada | Brandon | PRs #7/#8, tag `v0.4.0-rc.1` y CI del commit exacto aprobados |
-| P1 | Identificar o crear proyectos staging/prod; definir identidad, billing, región, estado Terraform y costo bruto/neto | Josué | Inventario de NODO y presupuesto confirmado; no usar recursos de otros proyectos |
-| P2 | Provisionar base de plataforma, usuario PostgreSQL, secretos y bootstrap seguro del primer admin | Josué | Plan aplicado, migración y login admin sin habilitar registro development |
-| P3 | Construir/escaneo de imágenes, configurar WIF/Environments y permisos GitHub; desplegar staging | Josué, coordinando con el propietario GitHub cuando aplique | Digests, permisos entre registros, jobs/worker activos y URL HTTPS |
-| P4 | Definir u obtener dominio, DNS, cuenta Resend y remitente; verificar y configurar secretos | Josué | SPF/DKIM/DMARC y recepción real de invitación/recuperación en cuenta autorizada |
-| P5 | Obtener app/cuenta OAuth aprobada de Intervals; implementar state/callback/cifrado, webhooks idempotentes, backfill/reconexión/revocación; conservar FIT | Josué | Importación real consentida, duplicados y revocación comprobados |
-| P6 | Definir propuesta de IA/modelo/región/retención/tope, coordinar aprobaciones aplicables e implementar adaptador real y ambos chats | Josué | Proveedor/configuración documentados, evaluaciones sintéticas, citas autorizadas, confirmación y flujos manuales |
-| P7 | Completar comparación prescrita/ejecutada, historial de actividades, chat atleta, pantallas administrativas y Web Push | Josué | Recorridos pendientes completos y notificación recibida en dispositivo consentido |
-| P8 | Validar 70 perfiles × 12 semanas, carga, privacidad, seguridad, renovación concurrente de sesiones, accesibilidad y teléfonos físicos | Josué, coordinando revisión especializada cuando aplique | Corpus versionado, métricas, hallazgos corregidos y validaciones fechadas |
-| P9 | Backups/PITR, restauración aislada, rollback, monitoreo, alertas, costos, guardia y soporte | Josué | Restore medido, objetivos RPO/RTO, alertas de API/cola/correo y acceso operativo |
-| P10 | Promover exactamente los digests probados, migrar y verificar producción; autorización general ya recibida | Josué | URL HTTPS, SHA→CI→digest→revisión, E2E coach/atleta y pruebas reales |
+| P1 | Identificar o crear proyectos staging/prod; definir identidad, billing, región, estado Terraform y costo bruto/neto | Nosotros preparamos/ejecutamos; Josué coordina los datos y permisos faltantes | Inventario de NODO y presupuesto confirmado; no usar recursos de otros proyectos |
+| P2 | Provisionar base de plataforma, usuario PostgreSQL, secretos y bootstrap seguro del primer admin | Nosotros, con acceso autorizado | Plan aplicado, migración y login admin sin habilitar registro development |
+| P3 | Construir/escaneo de imágenes, configurar WIF/Environments y permisos GitHub; desplegar staging | Nosotros; propietario GitHub habilita lo que exija admin | Digests, permisos entre registros, jobs/worker activos y URL HTTPS |
+| P4 | Definir u obtener dominio, DNS, cuenta Resend y remitente; verificar y configurar secretos | Nosotros configuramos/verificamos; Josué coordina propiedad/cuentas/condiciones faltantes | SPF/DKIM/DMARC y recepción real de invitación/recuperación en cuenta autorizada |
+| P5 | Obtener app/cuenta OAuth aprobada de Intervals; implementar state/callback/cifrado, webhooks idempotentes, backfill/reconexión/revocación; conservar FIT | Nosotros implementamos/verificamos; Josué coordina propietario y aprobación externa | Importación real consentida, duplicados y revocación comprobados |
+| P6 | Definir propuesta de IA/modelo/región/retención/tope, coordinar aprobaciones aplicables e implementar adaptador real y ambos chats | Nosotros implementamos/evaluamos; responsables humanos deciden condiciones aplicables | Proveedor/configuración documentados, evaluaciones sintéticas, citas autorizadas, confirmación y flujos manuales |
+| P7 | Completar comparación prescrita/ejecutada, historial de actividades, chat atleta, pantallas administrativas y Web Push | Nosotros | Recorridos pendientes completos y notificación recibida en dispositivo consentido |
+| P8 | Validar 70 perfiles × 12 semanas, carga, privacidad, seguridad, renovación concurrente de sesiones, accesibilidad y teléfonos físicos | Nosotros automatizamos/corregimos; Brandon u otro tester autorizado realiza dispositivos; revisión especializada cuando aplique | Corpus versionado, métricas, hallazgos corregidos y validaciones fechadas |
+| P9 | Backups/PITR, restauración aislada, rollback, monitoreo, alertas, costos, guardia y soporte | Nosotros preparamos/verificamos; Josué recibe la operación | Restore medido, objetivos RPO/RTO, alertas de API/cola/correo y acceso operativo |
+| P10 | Promover exactamente los digests probados, migrar y verificar producción; autorización general ya recibida | Nosotros ejecutamos/verificamos con recursos identificados y acceso autorizado | URL HTTPS, SHA→CI→digest→revisión, E2E coach/atleta y pruebas reales |
 | P11 | Coordinar legal/consentimiento/retención, precio/soporte y selección del piloto con responsables de negocio/legal | Josué coordina; responsables humanos aprueban lo aplicable | Checklist `LANZAMIENTO.md` completo; GO para atletas reales |
 
 Los trabajos P4/P5/P6 pueden avanzar en paralelo al staging cuando existan sus datos externos. Las dependencias no se marcan cerradas sólo por configurar variables. IA e Intervals requieren código adicional además de credenciales.
 
 ## 6. Datos y recursos por resolver por Josué
 
-No se asume que estos recursos existan ni que Brandon pueda entregar la configuración. Josué debe comprobar qué existe, gestionar accesos y definir o crear lo faltante. Registrar cada punto como `por definir`, `por crear`, `por configurar` o `verificado`, junto con responsable, siguiente acción y evidencia. La asignación de seguimiento no equivale a aceptación de Josué ni a aprobación de costos o términos de terceros.
+No se asume que estos recursos existan ni que Brandon pueda entregar la configuración. Josué coordina con sus propietarios qué existe, quién concede acceso y las decisiones externas. Nosotros preparamos las propuestas/guiones y creamos o configuramos lo posible cuando existan esos permisos y condiciones. Registrar cada punto como `por definir`, `por crear`, `por configurar` o `verificado`, junto con responsable, siguiente acción y evidencia. La asignación de seguimiento no equivale a aceptación de Josué ni a aprobación de costos o términos de terceros.
 
 - [ ] Proyecto(s) GCP de NODO e identidad confirmada; cuenta de facturación/créditos y región.
 - [ ] Dominio de NODO y acceso DNS. Una URL `run.app` no verifica correo ni sustituye un dominio aprobado.

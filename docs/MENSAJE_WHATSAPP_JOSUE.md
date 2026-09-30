@@ -1,18 +1,17 @@
 # Mensaje para Josué por WhatsApp
 
-Borrador actualizado el 30-09-2026 para que Brandon lo copie. No se ha enviado.
-El candidato `v0.5.0-rc.1` sigue en ejecución; al publicarlo, actualizar la referencia con la evidencia final.
+Borrador del 30-09-2026 para que Brandon lo copie. No se ha enviado. Usar con la release y su comprobante publicados.
 
-> Josué, avancé NODO con la PWA de coach y atleta, calendario, FIT, historial y comparación, molestias, propuestas y ambos chats conectados al servidor. También dejé en código OAuth de Intervals, el adaptador de IA, notificaciones Push, privacidad/retención y administración de cupos.
+> Josué, dejé NODO integrado y publicado en GitHub como v0.5.0-rc.1. Completé la PWA de coach/atleta, calendario y publicación, FIT e historial/comparación, molestias, grupos/propuestas y ambos chats. También dejé OAuth de Intervals, IA, avisos/recordatorios, privacidad, cupos, escenarios de cargas y estimaciones de costos.
 >
-> Estoy cerrando la integración, las pruebas y la versión v0.5.0-rc.1 en GitHub. Dejé una demo con datos ficticios y el plan de entrega para revisar juntos lo que hice y lo que falta.
+> Va con demo de datos ficticios, instrucciones de arranque, CI y pruebas: 262 backend y 39 recorridos de navegador. La demo usa proveedores simulados; la recepción real aún debe comprobarse.
 >
-> Queda activar y verificar infraestructura, dominio/correo, Intervals, IA y Push con cuentas y dispositivos autorizados, además de backups, costos y documentos legales. Por la instrucción actual, no vamos a crear ni modificar ni desplegar nada en Google Cloud; te dejo la configuración y los pasos preparados. Vibe Conversa queda fuera de este proyecto.
+> De tu lado queda coordinar cuentas/proyecto/billing/dominio y activar Google Cloud, correo, Intervals, IA y Push; probar teléfonos, backups/restauración, alertas/costos y resolver privacidad, precio y soporte. Lo que aún no exista también queda en esa lista. No modifiqué Google Cloud; Vibe Conversa queda fuera.
 >
-> De tu lado necesitamos coordinar propietarios/accesos y hacer la sesión de recepción. Las integraciones tienen código y pruebas controladas; todavía no las presento como operativas en producción.
+> Podemos hacer una sesión de 45–60 min para que levantes la demo y registremos recepción y fechas.
 >
-> Handover y pendientes: https://github.com/Josuesp34/NODO/blob/main/docs/HANDOVER_JOSUE.md
+> Versión y pruebas: https://github.com/Josuesp34/NODO/releases/tag/v0.5.0-rc.1
 >
-> Versión y pruebas confirmadas: https://github.com/Josuesp34/NODO/blob/main/docs/VALIDACION_HANDOVER.md
+> Entrega y pendientes ordenados: https://github.com/Josuesp34/NODO/blob/v0.5.0-rc.1/docs/HANDOVER_JOSUE.md
 
-Revisar que los documentos y el candidato estén publicados antes de enviar. No adjuntar claves, `.env`, tokens, credenciales de demo ni datos de atletas.
+No adjuntar claves, `.env`, tokens, credenciales de demo ni datos de atletas.

@@ -1,6 +1,6 @@
 # Ejecución de la entrega completa
 
-Inicio: 30-09-2026. Estado: **en ejecución**.
+Inicio: 30-09-2026. Estado: **preparación técnica cerrada; publicación trazable por tag/comprobante y recepción externa pendiente**.
 
 Brandon autorizó ejecutar el plan completo, integrar y publicar sin repetir autorizaciones generales. La aceptación de Josué, cuentas propietarias, consentimiento y resultados reales se registran cuando existan.
 
@@ -29,14 +29,14 @@ Josué deberá autenticar la identidad propietaria y confirmar proyecto/billing/
 
 ## Evidencia y próximos pasos
 
-- [ ] Demo de clon limpio y semilla sintética idempotente.
-- [ ] E2E navegador con API/PostgreSQL/worker reales.
-- [ ] Producto y comparación integrados.
-- [ ] Ambos chats y adaptadores de proveedores integrados.
-- [ ] Push, privacidad, retención y comercial integrados.
-- [ ] Corpus 70 × 12 semanas, carga y seguridad verificadas.
-- [ ] CI del SHA actual; PR dev/main y nueva versión publicados.
-- [ ] Preparación verificable del despliegue; ejecución en Google Cloud reservada a Josué por instrucción de Brandon.
-- [ ] Handover y mensaje actualizados con evidencia y pendientes exactos.
+- [x] Demo de clon limpio y semilla sintética idempotente.
+- [x] E2E navegador con API/PostgreSQL/worker reales.
+- [x] Producto y comparación integrados.
+- [x] Ambos chats y adaptadores de proveedores integrados.
+- [x] Push, privacidad, retención y comercial integrados.
+- [x] Corpus 70 × 12 semanas, carga y seguridad verificadas.
+- CI/integración/publicación: [PR #13](https://github.com/Josuesp34/NODO/pull/13), tag [v0.5.0-rc.1](https://github.com/Josuesp34/NODO/releases/tag/v0.5.0-rc.1) y comprobante adjunto con PR de promoción y SHA exacto.
+- [x] Preparación verificable del despliegue; ejecución en Google Cloud reservada a Josué por instrucción de Brandon.
+- [x] Handover y mensaje actualizados con evidencia y pendientes exactos.
 
-Actualizar este registro conforme se ejecuten las comprobaciones; nunca convertir una prueba simulada en recepción o integración real.
+Evidencia: 262 pruebas PostgreSQL, 41 PWA, 39 navegador y corpus 70 × 84 días; referencias y límites en [VALIDACION_HANDOVER](VALIDACION_HANDOVER.md). La recepción de Josué y toda activación externa siguen sin realizar. Nunca convertir una prueba simulada en recepción real.

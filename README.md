@@ -22,11 +22,11 @@ Plataforma para que entrenadores planifiquen, publiquen y revisen el entrenamien
 - [Pendientes del MVP, ruta crítica y criterios de prueba](docs/PENDIENTES_MVP.md).
 - [Plataforma GCP](infra/README.md), [operación](docs/OPERACION_GCP.md), [seguridad](docs/SEGURIDAD.md), [costos](docs/COSTOS.md) y [lanzamiento](docs/LANZAMIENTO.md).
 
-**Estado actual: candidato `v0.5.0-rc.1` en verificación de entrega.** Producto manual, ambos chats, adaptadores Intervals/Vertex, privacidad, Push y operación están implementados; la demo usa datos sintéticos y proveedores simulados explícitos. La evidencia final de pruebas, PRs y versión se registra en [VALIDACION_HANDOVER](docs/VALIDACION_HANDOVER.md). Las integraciones con cuentas reales requieren activación y comprobación separadas.
+**Entrega de código: `v0.5.0-rc.1`, con demo y CI verificados.** Producto manual, ambos chats, adaptadores Intervals/Vertex, privacidad, Push y operación están implementados; la demo usa datos sintéticos y proveedores simulados explícitos. La evidencia final de pruebas, PRs y versión se registra en [VALIDACION_HANDOVER](docs/VALIDACION_HANDOVER.md). Las integraciones con cuentas reales requieren activación y comprobación separadas.
 
 ## Entrega con Josué
 
-Empezar por [ARRANQUE_Y_OPERACION](docs/ARRANQUE_Y_OPERACION.md), [handover](docs/HANDOVER_JOSUE.md) y [pendientes externos](docs/PLAN_CIERRE_PRE_HANDOVER.md#activación-que-recibe-josué). El [mensaje WhatsApp](docs/MENSAJE_WHATSAPP_JOSUE.md) es un borrador listo para copiar cuando la versión esté publicada.
+Empezar por [ARRANQUE_Y_OPERACION](docs/ARRANQUE_Y_OPERACION.md), [handover](docs/HANDOVER_JOSUE.md) y [pendientes externos](docs/PLAN_CIERRE_PRE_HANDOVER.md#activación-que-recibe-josué). El [mensaje WhatsApp](docs/MENSAJE_WHATSAPP_JOSUE.md) es un borrador listo para copiar; no se ha enviado.
 
 **Google Cloud queda reservado a Josué por instrucción de Brandon.** Esta ejecución no crea, modifica ni despliega recursos allí. Vibe Conversa es otro proyecto. Se entregan configuración/runbooks; dominio, proveedores reales, teléfonos, restore, costos y aprobación legal/comercial siguen pendientes.
 

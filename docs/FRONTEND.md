@@ -1,6 +1,6 @@
 # Frontend vigente: PWA unificada
 
-Actualizado: 30 de septiembre de 2026. Candidato `v0.5.0-rc.1` en ejecución.
+Actualizado: 30 de septiembre de 2026. Entrega `v0.5.0-rc.1`, con 41 pruebas PWA y 39 casos E2E aprobados; evidencia en [VALIDACION_HANDOVER](VALIDACION_HANDOVER.md).
 
 El producto activo es `frontend/apps/nodo-web`, una PWA Next.js con módulos coach, atleta y ajustes. `nodo-lab` conserva la referencia anterior y se compila para detectar regresiones. Expo (`nodo-mobile`) está congelado y fuera del workspace activo según ADR 0003; no reactivarlo sin revisar dependencias/seguridad.
 

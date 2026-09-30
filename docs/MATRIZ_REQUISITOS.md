@@ -1,15 +1,15 @@
 # Matriz requisito → implementación → prueba local → validación externa
 
-Actualizada: 30 de septiembre de 2026. **Candidato `v0.5.0-rc.1` en ejecución**. El cierre exacto de pruebas integradas, SHA, PR, CI y release se registra en [VALIDACION_HANDOVER.md](VALIDACION_HANDOVER.md). Esta matriz no declara el candidato publicado ni sustituye una aceptación externa con código o mocks.
+Actualizada: 30 de septiembre de 2026. **Entrega de código `v0.5.0-rc.1`**. Las pruebas integradas, SHA, PR, CI y release se registran en [VALIDACION_HANDOVER.md](VALIDACION_HANDOVER.md). La publicación se comprueba mediante tag/comprobante; esta matriz no sustituye aceptación externa con código o mocks.
 
 **Restricción vigente:** no crear, modificar ni desplegar recursos Google Cloud. Código, pruebas e integración/publicación GitHub siguen autorizados. Josué recibe la preparación para activar después; Vibe Conversa queda fuera.
 
 | Requisito | Implementación | Prueba local / evidencia disponible | Validación externa / estado de cierre |
 | --- | --- | --- | --- |
-| F0 · Fundación reproducible | FastAPI, PWA, Docker/Compose, Alembic y CI; `ops/demo.py`, `compose.demo.yml` | Tests backend/frontend, builds y demo sintética; comprobación final del clon limpio en ejecución | CI/tag del SHA final y recepción de Josué pendientes |
-| FA · PostgreSQL 16 | Migración 0004, partición/BRIN y migraciones encadenadas de producto/proveedores/privacidad | Ciclos upgrade/check/downgrade/upgrade de paquetes en PostgreSQL; ciclo de mezcla final en ejecución | Cloud SQL y particiones del entorno activado pendientes |
+| F0 · Fundación reproducible | FastAPI, PWA, Docker/Compose, Alembic y CI; `ops/demo.py`, `compose.demo.yml` | Tests backend/frontend, builds y demo sintética; checkout limpio comprobado en CI Docker | CI/tag en comprobante; recepción de Josué pendiente |
+| FA · PostgreSQL 16 | Migración 0004, partición/BRIN y migraciones encadenadas de producto/proveedores/privacidad | Ciclos upgrade/check/downgrade/upgrade de paquetes en PostgreSQL; ciclo completo de la mezcla aprobado | Cloud SQL y particiones del entorno activado pendientes |
 | F1 · Identidad | Modelos auth/organizaciones, multirol, asignaciones, invitación y bootstrap por job | `test_identity_and_planning.py`, `test_bootstrap_admin.py`; accesos cruzados, rol actual y revocación | Identidades nominales, acceso admin y activación real pendientes |
-| F2 · PWA/BFF | `frontend/apps/nodo-web`, cookies httpOnly, refresh rotado, origen/cuerpo acotados, cache por cuenta con expiración/invalidación | Tests `backend-transport`, `bff-security`, `pwa-contract`; E2E/QA integrado en curso | HTTPS/cookies del despliegue, Safari iOS/Chrome Android físicos pendientes |
+| F2 · PWA/BFF | `frontend/apps/nodo-web`, cookies httpOnly, refresh rotado, origen/cuerpo acotados, cache por cuenta con expiración/invalidación | Tests `backend-transport`, `bff-security`, `pwa-contract`; 39 casos E2E y QA integrado aprobados | HTTPS/cookies del despliegue, Safari iOS/Chrome Android físicos pendientes |
 | F3 · Perfil | Perfil versionado, deportes/disponibilidad/parámetros/fuente/vigencia y UI coach/atleta | `test_pilot_product.py`, `test_product_completion.py`; conserva histórico y datos insuficientes | Recepción con participantes consentidos pendiente |
 | F4 · Calendario | Bloques, competencias, sesiones/pasos/objetivos, CAS y publicación idempotente | `test_identity_and_planning.py`, `test_product_completion.py`, E2E; conflictos y visibilidad atleta | Recorrido desplegado y recepción pendientes |
 | F5 · FIT/ingesta | `activity_routes.py`, parser FIT, hash/dueño, laps/telemetría y worker | `test_fit_ingestion.py`, `test_fit_parser.py`, `test_jobs.py`; duplicados, acceso y recálculo | Archivos/dispositivos consentidos, cola/alertas cloud pendientes |

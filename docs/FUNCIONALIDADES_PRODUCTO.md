@@ -1,6 +1,6 @@
 # Funcionalidades actuales de NODO
 
-Actualizado: 30 de septiembre de 2026. **Candidato `v0.5.0-rc.1` en ejecución**, sin declaración de publicación o producción activa. Este inventario describe el código integrado y el cierre en curso. Los resultados finales del SHA, CI, E2E y release se registran en [VALIDACION_HANDOVER.md](VALIDACION_HANDOVER.md).
+Actualizado: 30 de septiembre de 2026. **Entrega de código `v0.5.0-rc.1`**, con demo/CI verificados. Este inventario describe implementación y límites; no acredita producción activa. SHA, CI, E2E y release se registran en [VALIDACION_HANDOVER.md](VALIDACION_HANDOVER.md).
 
 “Implementado” describe código consumible por API/PWA; “probado localmente” exige evidencia sintética; “operativo externo” exige proveedor, despliegue o dispositivo reales. Una prueba con transporte HTTP interceptado no acredita recepción ni importación real.
 
@@ -10,10 +10,10 @@ Actualizado: 30 de septiembre de 2026. **Candidato `v0.5.0-rc.1` en ejecución**
 
 | Área | Implementación actual | Prueba local / límite | Validación externa pendiente |
 | --- | --- | --- | --- |
-| Pública y sesión | Landing, acceso/activación/recuperación, soporte, privacidad/términos borrador, BFF con cookies httpOnly, refresh/logout | Tests de transporte/origen/cuerpo, contratos PWA; cierre offline y navegador integrado en curso | HTTPS, dominio, dispositivos y aprobación de textos legales |
+| Pública y sesión | Landing, acceso/activación/recuperación, soporte, privacidad/términos borrador, BFF con cookies httpOnly, refresh/logout | Tests de transporte/origen/cuerpo, contratos PWA; offline y navegador integrado aprobados en CI | HTTPS, dominio, dispositivos y aprobación de textos legales |
 | Identidad | Roles múltiples, capacidades, organizaciones/membresías/asignaciones, invitación/revocación | Pruebas de aislamiento, rol actual y acceso tras revocar | Accesos nominales y recepción de Josué |
 | Bootstrap | Primer administrador por job explícito, idempotente, auditado, sin habilitar registro HTTP productivo | Pruebas de creación, repetición y errores sin secretos | Ejecutar con secretos del entorno activado por Josué |
-| Planificación | Bloques, sesiones/pasos/repeticiones/objetivos, CAS y publicación idempotente, Hoy/Semana/detalle atleta | Conflictos, versión publicada y permisos probados; E2E final en curso | Recorrido HTTPS y dispositivos |
+| Planificación | Bloques, sesiones/pasos/repeticiones/objetivos, CAS y publicación idempotente, Hoy/Semana/detalle atleta | Conflictos, versión publicada y permisos probados; publicación/CAS aprobados en E2E | Recorrido HTTPS y dispositivos |
 | Perfil y contexto | Perfil deportivo versionado, disciplinas/parámetros/disponibilidad, competencias/prioridad, observaciones y check-in | API/PWA y pruebas de producto; fuente/vigencia y datos insuficientes | Validación de uso con participantes consentidos |
 | Molestias/revisión | Alta/evolución, historial, bandeja, decisión/seguimiento y reapertura | Prioridad visible y separación de cierre/decisión; no diagnóstico | Recepción del flujo por equipo piloto |
 | FIT | Carga autenticada, hash por atleta, laps/telemetría, auditoría y recálculo en cola | Una sola sesión, máximo 10 MiB; pruebas duplicados/acceso/fechas | Archivos consentidos de dispositivos soportados |

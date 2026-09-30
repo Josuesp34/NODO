@@ -1,9 +1,9 @@
 # Handover de NODO con Josué
 
 Actualizado: 30 de septiembre de 2026. Responsable de entrega: Brandon.
-Estado: **candidato `v0.5.0-rc.1` en ejecución; cierre de integración y publicación pendiente**.
+Estado: **entrega de código `v0.5.0-rc.1` con demo/CI verificados; recepción y activación externas pendientes**.
 
-El objetivo es entregar el código, la demo reproducible y una lista concreta de activación para Josué. El candidato incorpora producto, proveedores, privacidad y operación; la revisión final, las pruebas de la mezcla y el CI del SHA final se registran en [VALIDACION_HANDOVER.md](VALIDACION_HANDOVER.md). No equivale a producción activa ni a recepción aceptada por Josué.
+El objetivo es entregar el código, la demo reproducible y una lista concreta de activación para Josué. El candidato incorpora producto, proveedores, privacidad y operación; las pruebas de la mezcla, revisión técnica y CI se registran en [VALIDACION_HANDOVER.md](VALIDACION_HANDOVER.md). No equivale a producción activa ni a recepción aceptada por Josué.
 
 **Instrucción vigente de Brandon:** no crear, modificar ni desplegar recursos en Google Cloud. La autorización de código, commits, PRs, integración y versiones GitHub sigue vigente. Josué recibe Terraform, configuración y runbooks para activar la plataforma posteriormente. **Vibe Conversa queda fuera de NODO**. Las autorizaciones de despliegue de documentos históricos quedan sustituidas por esta restricción.
 
@@ -18,14 +18,14 @@ El objetivo es entregar el código, la demo reproducible y una lista concreta de
 | Asistentes | Chats persistidos coach/atleta, herramientas autorizadas, citas, preview/confirmación, streaming/cancelación, límites/uso y adaptador Vertex | Modelo/región/condiciones/costo aprobados y evaluación con proveedor real; demo usa simulador explícito |
 | Notificaciones | Preferencias, zona/silencio, suscripciones cifradas, avisos de producto en cola, recordatorios opt-in en la hora anterior a una sesión, dedupe, baja/expiración y payload mínimo | Claves VAPID, HTTPS y recepción/baja en dispositivo consentido |
 | Privacidad y comercial | Consentimiento por finalidad, exportación/borrado FK, limpieza durable de archivos/tokens/chats, retención periódica, cupos/suspensión y administración por entidades autorizadas | Aviso/retención legal, política de backups, soporte y precio; cobros administrados, sin pasarela |
-| Calidad/plataforma | Corpus sintético 70 × 12 semanas, benchmark autenticado, E2E, PostgreSQL, worker con lease, IaC/CI y runbooks | Cierre de pruebas/CI final, dispositivos, rendimiento cloud, restauración y operación reales |
+| Calidad/plataforma | Corpus sintético 70 × 12 semanas, benchmark autenticado, E2E, PostgreSQL, worker con lease, IaC/CI y runbooks | Dispositivos, rendimiento cloud, restauración y operación reales |
 
 El inventario detallado está en [FUNCIONALIDADES_PRODUCTO.md](FUNCIONALIDADES_PRODUCTO.md); la matriz separa implementación, prueba local y validación externa en [MATRIZ_REQUISITOS.md](MATRIZ_REQUISITOS.md). El candidato incorpora escenarios precompetencia de cargas explícitas y panel de costos IA: están probados con datos sintéticos y conservan sus límites. Los escenarios no predicen rendimiento ni publican planes; los costos son estimaciones/reservas, no facturas.
 
 ## Versión y fuente de entrega
 
 - Base histórica publicada: [`v0.4.0-rc.1`](https://github.com/Josuesp34/NODO/releases/tag/v0.4.0-rc.1).
-- Objetivo actual: **`v0.5.0-rc.1`, candidato en ejecución; todavía no se presenta como publicado**.
+- Versión de entrega: [**`v0.5.0-rc.1` y comprobante**](https://github.com/Josuesp34/NODO/releases/tag/v0.5.0-rc.1).
 - La rama de integración y los PRs del candidato se registran en [EJECUCION_ENTREGA.md](EJECUCION_ENTREGA.md). El cierre registra SHA, PRs, checks y tag exactos en [VALIDACION_HANDOVER.md](VALIDACION_HANDOVER.md).
 - Usar el tag publicado y confirmado en esa evidencia para entregar un snapshot. No utilizar una carpeta con cambios sin versionar, compartir `.env` ni copiar secretos por WhatsApp.
 - `frontend/apps/nodo-web` es la PWA activa. Lab y Expo conservan sus referencias; Expo no forma parte del workspace activo.
@@ -37,7 +37,7 @@ Requisitos: Git, Python 3 y Docker Desktop con Compose. La demo utiliza únicame
 ```bash
 git clone https://github.com/Josuesp34/NODO.git
 cd NODO
-# Cambiar al tag confirmado en VALIDACION_HANDOVER.md cuando se publique.
+git checkout v0.5.0-rc.1
 python3 ops/demo.py up
 python3 ops/demo.py status
 ```
@@ -68,7 +68,7 @@ No exponer esta demo a internet ni reutilizar sus claves en producción. El esta
 
 | Orden | Trabajo | Responsable | Evidencia de cierre |
 | --- | --- | --- | --- |
-| 1 | Terminar mezcla, demo, suite, E2E y CI; integrar dev/main y publicar candidato | Brandon/equipo de desarrollo | SHA, PRs, CI y tag exactos en VALIDACION_HANDOVER |
+| Entregado | Código, demo, suite/E2E/CI y versión GitHub | Brandon/equipo de desarrollo | SHA, PRs, CI y tag en VALIDACION_HANDOVER y comprobante de release |
 | 2 | Confirmar cuenta/proyectos propios NODO, billing/créditos, región, dominio y permisos | Josué coordina propietarios | Inventario nominal y costos confirmados; Vibe fuera |
 | 3 | Configurar Terraform/WIF/Secret Manager, API/PWA privadas donde corresponde, worker/jobs y migraciones | Josué activa después de la entrega | Plan revisado, digests, ejecución de migración y HTTPS; esta ejecución no modifica Cloud |
 | 4 | Activar Resend, Intervals y modelo Vertex aprobado | Josué con propietarios de proveedores | Dominio verificado, correo recibido, importación/revocación consentidas y evaluación IA real |
@@ -80,6 +80,6 @@ La infraestructura se entrega preparada. **No ejecutar `terraform apply`, jobs r
 
 ## Cierre del handover
 
-La entrega técnica queda cerrada cuando el snapshot está publicado, sus checks son verificables, Josué reproduce la demo y los pendientes tienen responsable. La entrega operativa requiere además producción/proveedores, dispositivos, restauración, monitoreo, condiciones legales/comerciales y recepción registrados por separado.
+La preparación técnica incluye snapshot, checks y pendientes con responsable. La recepción técnica queda cerrada cuando Josué reproduce la demo y registra el resultado. La entrega operativa requiere además producción/proveedores, dispositivos, restauración, monitoreo, condiciones legales/comerciales y recepción registrados por separado.
 
 Plan: [PLAN_CIERRE_PRE_HANDOVER.md](PLAN_CIERRE_PRE_HANDOVER.md). Mensaje listo para copiar: [MENSAJE_WHATSAPP_JOSUE.md](MENSAJE_WHATSAPP_JOSUE.md). Runbooks: [OPERACION_GCP.md](OPERACION_GCP.md), [RUNBOOK_PRODUCCION.md](RUNBOOK_PRODUCCION.md), [RECUPERACION_DESASTRES.md](RECUPERACION_DESASTRES.md), [RESEND_CONFIGURACION.md](RESEND_CONFIGURACION.md) y [LANZAMIENTO.md](LANZAMIENTO.md).

@@ -1,6 +1,6 @@
 # Estado técnico de NODO
 
-Actualizado: 30-09-2026. Candidato `v0.5.0-rc.1` en cierre de pruebas y publicación. El estado vigente está en [FUNCIONALIDADES_PRODUCTO](FUNCIONALIDADES_PRODUCTO.md), [VALIDACION_HANDOVER](VALIDACION_HANDOVER.md) y [HANDOVER_JOSUE](HANDOVER_JOSUE.md).
+Actualizado: 30-09-2026. Entrega de código `v0.5.0-rc.1` con demo y CI verificados. El tag y el comprobante de release identifican el SHA final. El estado vigente está en [FUNCIONALIDADES_PRODUCTO](FUNCIONALIDADES_PRODUCTO.md), [VALIDACION_HANDOVER](VALIDACION_HANDOVER.md) y [HANDOVER_JOSUE](HANDOVER_JOSUE.md).
 
 Se integraron producto/comparación, ambos chats y adaptadores OAuth/Vertex, privacidad/retención/FIT privados, notificaciones, administración y plataforma preparada. Los proveedores de la demo son simulados; una prueba contractual no acredita operación real. Alembic termina en `0009_operations`. PostgreSQL 16 usa particiones/BRIN y tabla default; no requiere TimescaleDB.
 

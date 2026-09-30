@@ -1,6 +1,6 @@
 # Arranque y operación para Josué
 
-Actualizado: 30-09-2026. Entrega candidata `v0.5.0-rc.1`; comprobar publicación y evidencia en [VALIDACION_HANDOVER](VALIDACION_HANDOVER.md).
+Actualizado: 30-09-2026. Entrega `v0.5.0-rc.1`; comprobar tag y evidencia en [VALIDACION_HANDOVER](VALIDACION_HANDOVER.md).
 
 ## Recibir y levantar la demo
 

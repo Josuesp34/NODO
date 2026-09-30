@@ -4,7 +4,7 @@ Fecha: 29 de septiembre de 2026. Responsable de entrega: Brandon.
 
 **Objetivo:** entregar una versión compartida y reproducible del código, revisar con Josué lo que funciona y cerrar el recorrido hasta producción con evidencia. Brandon autorizó el PR completo, integración y despliegue; esa autorización ya está dada. La apertura a atletas reales conserva los criterios de `LANZAMIENTO.md`.
 
-**Estado:** piloto funcional local; proveedores reales y producción pendientes de configuración y verificación. Los responsables de abajo son una propuesta para acordar en el handover, no compromisos ya aceptados por Josué.
+**Estado:** código integrado y versión candidata publicada; proveedores reales y producción pendientes. Brandon no dispone de las respuestas sobre GCP, dominio, correo, OAuth e IA. Asigna a Josué el seguimiento de todo lo que falta, incluida la investigación, elección, creación y configuración de recursos inexistentes o sin confirmar. La recepción y aceptación de Josué aún deben registrarse.
 
 ## 1. Qué se entrega
 
@@ -30,6 +30,7 @@ La entrega incluye todos los avances locales de NODO y las correcciones de publi
 - Versión de entrega: [`v0.4.0-rc.1`](https://github.com/Josuesp34/NODO/releases/tag/v0.4.0-rc.1); identifica un candidato y no una aplicación operativa en producción.
 - PR completo: [#7](https://github.com/Josuesp34/NODO/pull/7). El estado de integración y la promoción a `main` se verifican en GitHub Release.
 - La evidencia final de SHA, PRs, CI y publicación se registra en [VALIDACION_HANDOVER.md](VALIDACION_HANDOVER.md) y en GitHub Release.
+- La versión de código conserva `v0.4.0-rc.1`. La [guía vigente en main](https://github.com/Josuesp34/NODO/blob/main/docs/HANDOVER_JOSUE.md) incorpora las aclaraciones posteriores de responsabilidades; el tag conserva su snapshot original.
 - No utilizar un ZIP que omita archivos nuevos, `.env` compartidos ni una carpeta con cambios sin versionar como fuente de despliegue.
 
 ## 3. Arranque reproducible para Josué
@@ -97,24 +98,26 @@ PY
 
 ## 5. Plan hasta producción
 
-| Orden | Trabajo por cerrar | Responsable propuesto | Evidencia para cerrar |
+| Orden | Trabajo por cerrar | Responsable de seguimiento | Evidencia para cerrar |
 |---|---|---|---|
-| P0 | Publicar código completo, resolver CI, revisar e integrar `dev` y release a `main` | Brandon + revisión Josué | PRs/SHA y checks de la versión exacta |
-| P1 | Elegir/verificar proyectos staging/prod, identidad, billing, región, estado Terraform y costo bruto/neto | Brandon; Josué recibe acceso nominal | Inventario de NODO y presupuesto confirmado; no usar recursos de otros proyectos |
-| P2 | Provisionar base de plataforma, usuario PostgreSQL, secretos y bootstrap seguro del primer admin | Desarrollo + Brandon operador | Plan aplicado, migración y login admin sin habilitar registro development |
-| P3 | Construir/escaneo de imágenes, WIF y Environments; desplegar staging | Desarrollo | Digests, permisos entre registros, jobs/worker activos y URL HTTPS |
-| P4 | Elegir dominio, DNS, Resend y remitente; configurar claves en Secret Manager | Brandon configura; desarrollo integra; Josué verifica | SPF/DKIM/DMARC y recepción real de invitación/recuperación en cuenta autorizada |
-| P5 | Intervals principal y FIT permanente: app aprobada, OAuth/state/callback/cifrado, webhooks idempotentes, backfill/reconexión/revocación | Brandon/Josué: cuenta y app; desarrollo: conector | Importación real consentida, duplicados y revocación comprobados |
-| P6 | Elegir IA/modelo/región/retención/tope; implementar adaptador real y conectar ambos chats | Brandon decide; desarrollo implementa; Josué evalúa | Evaluaciones con datos sintéticos, citas autorizadas, doble confirmación y flujos manuales |
-| P7 | Completar comparación prescrita/ejecutada, historial de actividades, chat atleta, pantallas administrativas y Web Push | Desarrollo; Josué valida producto | Recorridos pendientes completos y notificación recibida en dispositivo consentido |
-| P8 | Validar 70 perfiles × 12 semanas, carga, privacidad, seguridad, renovación concurrente de sesiones, accesibilidad y teléfonos físicos | Desarrollo + Josué; revisión especializada cuando aplique | Corpus versionado, métricas, hallazgos corregidos y validaciones fechadas |
-| P9 | Backups/PITR, restauración aislada, rollback, monitoreo, alertas, costos, guardia y soporte | Brandon operador + Josué relevo | Restore medido, objetivos RPO/RTO, alertas de API/cola/correo y acceso operativo |
-| P10 | Promover exactamente los digests probados, migrar y verificar producción | Brandon autoriza (ya dado); desarrollo despliega; Josué valida | URL HTTPS, SHA→CI→digest→revisión, E2E coach/atleta y pruebas reales |
-| P11 | Legal/consentimiento/retención, precio/soporte y selección del piloto | Brandon + responsables humanos | Checklist `LANZAMIENTO.md` completo; GO para atletas reales |
+| P0 · cerrado | Código completo integrado a `dev` y `main`; versión candidata publicada | Brandon | PRs #7/#8, tag `v0.4.0-rc.1` y CI del commit exacto aprobados |
+| P1 | Identificar o crear proyectos staging/prod; definir identidad, billing, región, estado Terraform y costo bruto/neto | Josué | Inventario de NODO y presupuesto confirmado; no usar recursos de otros proyectos |
+| P2 | Provisionar base de plataforma, usuario PostgreSQL, secretos y bootstrap seguro del primer admin | Josué | Plan aplicado, migración y login admin sin habilitar registro development |
+| P3 | Construir/escaneo de imágenes, configurar WIF/Environments y permisos GitHub; desplegar staging | Josué, coordinando con el propietario GitHub cuando aplique | Digests, permisos entre registros, jobs/worker activos y URL HTTPS |
+| P4 | Definir u obtener dominio, DNS, cuenta Resend y remitente; verificar y configurar secretos | Josué | SPF/DKIM/DMARC y recepción real de invitación/recuperación en cuenta autorizada |
+| P5 | Obtener app/cuenta OAuth aprobada de Intervals; implementar state/callback/cifrado, webhooks idempotentes, backfill/reconexión/revocación; conservar FIT | Josué | Importación real consentida, duplicados y revocación comprobados |
+| P6 | Definir propuesta de IA/modelo/región/retención/tope, coordinar aprobaciones aplicables e implementar adaptador real y ambos chats | Josué | Proveedor/configuración documentados, evaluaciones sintéticas, citas autorizadas, confirmación y flujos manuales |
+| P7 | Completar comparación prescrita/ejecutada, historial de actividades, chat atleta, pantallas administrativas y Web Push | Josué | Recorridos pendientes completos y notificación recibida en dispositivo consentido |
+| P8 | Validar 70 perfiles × 12 semanas, carga, privacidad, seguridad, renovación concurrente de sesiones, accesibilidad y teléfonos físicos | Josué, coordinando revisión especializada cuando aplique | Corpus versionado, métricas, hallazgos corregidos y validaciones fechadas |
+| P9 | Backups/PITR, restauración aislada, rollback, monitoreo, alertas, costos, guardia y soporte | Josué | Restore medido, objetivos RPO/RTO, alertas de API/cola/correo y acceso operativo |
+| P10 | Promover exactamente los digests probados, migrar y verificar producción; autorización general ya recibida | Josué | URL HTTPS, SHA→CI→digest→revisión, E2E coach/atleta y pruebas reales |
+| P11 | Coordinar legal/consentimiento/retención, precio/soporte y selección del piloto con responsables de negocio/legal | Josué coordina; responsables humanos aprueban lo aplicable | Checklist `LANZAMIENTO.md` completo; GO para atletas reales |
 
 Los trabajos P4/P5/P6 pueden avanzar en paralelo al staging cuando existan sus datos externos. Las dependencias no se marcan cerradas sólo por configurar variables. IA e Intervals requieren código adicional además de credenciales.
 
-## 6. Datos externos pendientes
+## 6. Datos y recursos por resolver por Josué
+
+No se asume que estos recursos existan ni que Brandon pueda entregar la configuración. Josué debe comprobar qué existe, gestionar accesos y definir o crear lo faltante. Registrar cada punto como `por definir`, `por crear`, `por configurar` o `verificado`, junto con responsable, siguiente acción y evidencia. La asignación de seguimiento no equivale a aceptación de Josué ni a aprobación de costos o términos de terceros.
 
 - [ ] Proyecto(s) GCP de NODO e identidad confirmada; cuenta de facturación/créditos y región.
 - [ ] Dominio de NODO y acceso DNS. Una URL `run.app` no verifica correo ni sustituye un dominio aprobado.
@@ -124,7 +127,7 @@ Los trabajos P4/P5/P6 pueden avanzar en paralelo al staging cuando existan sus d
 - [ ] Accesos nominales de Josué y procedimiento de soporte.
 - [ ] Propietario GitHub: protecciones/revisores, Environments/WIF y Dependency Graph/permisos del review nativo. Las auditorías directas siguen siendo obligatorias.
 
-Secretos por Secret Manager o canal seguro; WhatsApp y Git reciben únicamente enlaces, identificadores no secretos y estado. No repetir la aprobación general de producción ya recibida: pedir sólo la información faltante o una excepción material de costo/alcance.
+Secretos por Secret Manager o canal seguro; WhatsApp y Git reciben únicamente enlaces, identificadores no secretos y estado. Las preguntas anteriores quedan convertidas en este checklist para Josué, sin esperar respuestas inmediatas de Brandon. Mantener la autorización general de producción ya recibida; Josué coordina las decisiones puntuales de costo, términos o negocio que requieran aprobación.
 
 ## 7. Cierre del handover
 

@@ -69,7 +69,9 @@ async function forwardAuthenticated(path: string, init: RequestInit) {
   }, backendFetch);
   const forwarded = await passThrough(response);
   if (rotated) setSession(forwarded, rotated);
-  if (response.status === 401) clearSession(forwarded);
+  // A request made before a new login can finish later. Deleting cookies on
+  // that old 401 would erase the new session. Explicit logout clears cookies;
+  // expired credentials remain unauthorized until login replaces them.
   return forwarded;
 }
 

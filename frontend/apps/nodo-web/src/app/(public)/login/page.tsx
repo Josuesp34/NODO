@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Brand } from "@/components/ui";
 import { clearOfflineData, invalidateOtherSessions } from "@/lib/offline-store";
@@ -11,15 +11,20 @@ export default function LoginPage() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const identityRequest = useRef<AbortController | null>(null);
+  const loginStarted = useRef(false);
 
   useEffect(() => {
-    void fetch("/api/session/me", { cache: "no-store" }).then((response) => {
-      if (response.ok) router.replace("/app");
-    });
+    const controller = new AbortController(); identityRequest.current = controller;
+    void fetch("/api/session/me", { cache: "no-store", signal: controller.signal }).then((response) => {
+      if (response.ok && !controller.signal.aborted && !loginStarted.current) router.replace("/app");
+    }).catch(() => undefined);
+    return () => controller.abort();
   }, [router]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setError(null); setSubmitting(true); clearOfflineData();
+    event.preventDefault(); loginStarted.current = true; identityRequest.current?.abort();
+    setError(null); setSubmitting(true); clearOfflineData();
     try {
       const response = await fetch("/api/session/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
       if (!response.ok) {

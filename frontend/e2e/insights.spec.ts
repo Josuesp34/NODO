@@ -2,6 +2,9 @@ import { expect, test, type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
+// These cases intercept HTTP responses; offline/SW behavior is covered in product.spec.ts.
+test.use({ serviceWorkers: "block" });
+
 const credentials = JSON.parse(
   readFileSync(
     resolve(
@@ -21,6 +24,7 @@ async function login(page: Page, email: string) {
     .getByLabel("Contraseña", { exact: true })
     .fill(credentials.password);
   await page.getByRole("button", { name: "Entrar a NODO" }).click();
+  await expect(page).toHaveURL(/\/(admin\/operations|coach|athlete\/today)$/, { timeout: 20_000 });
   await expect(
     page.getByRole("button", { name: "Salir", exact: true }),
   ).toBeVisible();
@@ -185,6 +189,7 @@ test("administrador ve estimaciones y atleta ve sólo su uso", async ({
   ).toBeVisible();
   await expect(page.getByText(/no son facturas del proveedor/)).toBeVisible();
   await page.getByRole("button", { name: "Salir", exact: true }).click();
+  await expect(page).toHaveURL(/\/$/);
   await login(page, "athlete-demo@example.com");
   await page.goto("/settings/ai-costs");
   await expect(

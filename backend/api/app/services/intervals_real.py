@@ -7,6 +7,7 @@ import hashlib
 import json
 import math
 import re
+from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -42,12 +43,21 @@ SOURCES = {
 }
 
 
+@dataclass(frozen=True)
+class SyncFailureContext:
+    connection_id: int
+    token_digest: str
+    started_at: datetime
+
+
 class IntervalsError(Exception):
     def __init__(self, code: str, status: int = 502):
         self.code, self.status = code, status
         # Ephemeral only: callback encrypts this capability into durable cleanup.
         # It never appears in exception text or a public response.
         self.cleanup_token: str | None = None
+        # In-memory provenance only; the worker never persists it or a token.
+        self.sync_failure: SyncFailureContext | None = None
         super().__init__(code)
 
 
@@ -355,8 +365,10 @@ async def execute_intervals_job(db, job):
     if not connection or connection.status not in {"connected", "syncing"} or not connection.access_token_enc:
         return
     token_enc, remote_id = connection.access_token_enc, connection.external_athlete_id
+    connection_id = connection.id
     token = cipher().decrypt(token_enc.encode()).decode()
     adapter = RealIntervalsAdapter()
+    sync_started = datetime.now(UTC)
     await db.commit()  # Never hold database locks while contacting a provider.
 
     async def still_authorized():
@@ -478,6 +490,7 @@ async def execute_intervals_job(db, job):
                     db, athlete_id=athlete_id, connection_id=connection.id, episode_key=str(job_id)
                 )
             return
+        exc.sync_failure = SyncFailureContext(connection_id, digest(token_enc), sync_started)
         raise
     if event:
         ingestion = await db.scalar(
@@ -485,3 +498,42 @@ async def execute_intervals_job(db, job):
         )
         if ingestion:
             ingestion.status = "processed"
+
+
+async def mark_terminal_sync_failure(db, job, error: IntervalsError) -> bool:
+    """Persist error/outbox only with the worker's final claim CAS, never a separate commit."""
+    context = error.sync_failure
+    if context is None:
+        return False
+    athlete_id = int(job.payload["athlete_id"])
+    try:
+        await require_provider_consent(db, athlete_id, "training_data_processing")
+    except HTTPException:
+        return False
+    connection = await db.scalar(
+        select(AthleteConnection)
+        .where(
+            AthleteConnection.id == context.connection_id,
+            AthleteConnection.athlete_id == athlete_id,
+            AthleteConnection.provider == PROVIDER,
+        )
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    if (
+        connection is None
+        or connection.status not in {"connected", "syncing"}
+        or not connection.access_token_enc
+        or digest(connection.access_token_enc) != context.token_digest
+    ):
+        return False
+    last_sync = connection.last_sync_at
+    if last_sync is not None:
+        last_sync = last_sync if last_sync.tzinfo else last_sync.replace(tzinfo=UTC)
+        if last_sync > context.started_at:
+            return False
+    connection.status = "error"
+    from app.services.product_notifications import notify_sync_problem
+
+    await notify_sync_problem(db, athlete_id=athlete_id, connection_id=connection.id, episode_key=str(job.id))
+    return True

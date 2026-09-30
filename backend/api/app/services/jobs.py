@@ -195,6 +195,11 @@ async def execute_job(db: AsyncSession, job: Job) -> None:
             "locked_by": None,
             "run_after": datetime.now(UTC) + timedelta(seconds=delay),
         }
+        if status == "dead" and job_kind == "intervals_sync":
+            from app.services.intervals_real import IntervalsError, mark_terminal_sync_failure
+
+            if isinstance(exc, IntervalsError):
+                await mark_terminal_sync_failure(db, job, exc)
         if await finish(values):
             logger.warning(
                 json.dumps(

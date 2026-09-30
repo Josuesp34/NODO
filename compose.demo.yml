@@ -1,0 +1,81 @@
+# Sólo demo local sintética. ops/demo.py genera credenciales fuera de Git.
+x-api-environment: &api-environment
+  DATABASE_URL: ${DEMO_DATABASE_URL:?Usar python3 ops/demo.py up}
+  ENVIRONMENT: development
+  ALLOW_COACH_REGISTRATION: "true"
+  AI_PROVIDER: simulated
+  PUBLIC_APP_URL: http://127.0.0.1:${DEMO_WEB_PORT:-3300}
+  WORKER_POLL_INTERVAL_SECONDS: "1"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: nodo_demo
+      POSTGRES_DB: nodo_demo
+      POSTGRES_PASSWORD: ${DEMO_DB_PASSWORD:?Usar python3 ops/demo.py up}
+    ports:
+      - "127.0.0.1:${DEMO_DB_PORT:-55432}:5432"
+    volumes:
+      - ./.local/nodo-demo/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nodo_demo -d nodo_demo"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  migrate:
+    build: ./backend/api
+    image: ${DEMO_API_IMAGE:?Usar python3 ops/demo.py up}
+    environment: *api-environment
+    command: ["sh", "-c", "alembic upgrade head && alembic check"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+  api:
+    image: ${DEMO_API_IMAGE:?Usar python3 ops/demo.py up}
+    environment: *api-environment
+    ports:
+      - "127.0.0.1:${DEMO_API_PORT:-8800}:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5)"]
+      interval: 3s
+      timeout: 6s
+      retries: 30
+  worker:
+    image: ${DEMO_API_IMAGE:?Usar python3 ops/demo.py up}
+    environment: *api-environment
+    command: ["python", "-m", "app.services.jobs"]
+    depends_on:
+      api:
+        condition: service_healthy
+  pwa:
+    build:
+      context: ./frontend
+      dockerfile: apps/nodo-web/Dockerfile
+    image: ${DEMO_PWA_IMAGE:?Usar python3 ops/demo.py up}
+    environment:
+      NODO_API_URL: http://api:8000/api/v1
+      NODO_APP_ORIGIN: http://127.0.0.1:${DEMO_WEB_PORT:-3300}
+      SESSION_COOKIE_SECURE: "false"
+      NODO_LOCAL_DEMO: "true"
+    ports:
+      - "127.0.0.1:${DEMO_WEB_PORT:-3300}:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+  seed:
+    image: ${DEMO_API_IMAGE:?Usar python3 ops/demo.py up}
+    profiles: ["tools"]
+    environment:
+      <<: *api-environment
+      NODO_DEMO_PASSWORD: ${DEMO_LOGIN_PASSWORD:?Usar python3 ops/demo.py up}
+      PYTHONPATH: /app
+    volumes:
+      - ./ops:/tools:ro
+    command: ["python", "/tools/demo_seed.py", "--api", "http://api:8000"]
+    depends_on:
+      api:
+        condition: service_healthy

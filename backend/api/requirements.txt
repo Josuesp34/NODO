@@ -13,6 +13,7 @@ alembic==1.13.3
 argon2-cffi==23.1.0
 email-validator==2.2.0
 httpx==0.27.2
+google-auth[requests]==2.59.0
 # Shared networking dependencies pinned to the reviewed production resolution.
 anyio==4.15.1
 idna==3.20

@@ -27,7 +27,8 @@ export default function LoginPage() {
         throw new Error(response.status === 401 ? "Correo o contraseña incorrectos." : payload?.detail ?? "No fue posible iniciar sesión.");
       }
       const requested = new URLSearchParams(window.location.search).get("next");
-      router.replace(requested?.startsWith("/") ? requested : "/app");
+      const safeNext = requested?.startsWith("/") && !requested.startsWith("//") && !/[\\\u0000-\u001f]/.test(requested);
+      router.replace(safeNext ? requested : "/app");
       router.refresh();
     } catch (reason) { setError(reason instanceof Error ? reason.message : "No fue posible iniciar sesión."); }
     finally { setSubmitting(false); }

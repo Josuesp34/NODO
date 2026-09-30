@@ -1,4 +1,5 @@
 import type { ApiProblem } from "./contracts";
+import { clearOfflineData } from "./offline-store";
 
 export class NodoWebError extends Error {
   constructor(
@@ -32,6 +33,7 @@ export async function nodoRequest<T>(path: string, options: RequestOptions = {})
   });
 
   if (!response.ok) {
+    if (response.status === 401 || response.status === 403) clearOfflineData();
     const payload = (await response.json().catch(() => null)) as { detail?: unknown; message?: string } | null;
     const message =
       typeof payload?.detail === "string"

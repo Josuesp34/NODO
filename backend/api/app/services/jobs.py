@@ -1,4 +1,7 @@
 import asyncio
+import json
+import logging
+import os
 import socket
 from datetime import UTC, date, datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -10,8 +13,11 @@ from app.core.config import settings
 from app.core.database import async_session_maker
 from app.domain.metrics import calculate_training_status
 from app.infrastructure.database.models import Activity, User
+from app.infrastructure.database.models.operations import WorkerHeartbeat
 from app.infrastructure.database.models.product import DailyLoad, Job
 from app.services.email import send_queued_email
+
+logger = logging.getLogger("nodo.worker")
 
 
 async def recompute_daily_load(db: AsyncSession, athlete_id: int, from_date: date) -> None:
@@ -50,7 +56,9 @@ async def recompute_daily_load(db: AsyncSession, athlete_id: int, from_date: dat
             DailyLoad.load_unit == "trimp",
         )
     )
-    final_day = max(loads_by_day, default=from_date)
+    from app.domain.comparison import daily_load_horizon
+
+    final_day = daily_load_horizon(from_date, loads_by_day, datetime.now(UTC), athlete.timezone)
     day = from_date
     now = datetime.now(UTC)
     while day <= final_day:
@@ -107,6 +115,22 @@ async def execute_job(db: AsyncSession, job: Job) -> None:
             await send_queued_email(job)
             # Reducir retención de PII incluso cifrada tras la entrega.
             job.payload = {"delivered": True}
+        elif job.kind == "intervals_sync":
+            from app.services.intervals_real import execute_intervals_job
+
+            await execute_intervals_job(db, job)
+        elif job.kind == "intervals_disconnect":
+            from app.services.intervals_real import execute_intervals_disconnect_job
+
+            await execute_intervals_disconnect_job(db, job)
+        elif job.kind == "send_web_push":
+            from app.services.notifications import send_notification
+
+            await send_notification(db, job)
+        elif job.kind in {"privacy_retention", "privacy_delete_user_files", "privacy_delete_artifact"}:
+            from app.services.privacy_jobs import dispatch_privacy_job
+
+            await dispatch_privacy_job(db, job)
         else:
             raise ValueError(f"Tipo de trabajo no soportado: {job.kind}")
         job.status = "completed"
@@ -114,12 +138,13 @@ async def execute_job(db: AsyncSession, job: Job) -> None:
         job.locked_at = None
         job.locked_by = None
         await db.commit()
+        logger.info(json.dumps({"event": "job_completed", "kind": job.kind, "attempt": job.attempts}))
     except Exception as exc:
         await db.rollback()
         fresh = await db.get(Job, job.id)
         if fresh is None:
             return
-        fresh.last_error = str(exc)[:2000]
+        fresh.last_error = "Tipo de trabajo no soportado" if job.kind == "unsupported" else type(exc).__name__
         fresh.locked_at = None
         fresh.locked_by = None
         if fresh.attempts >= fresh.max_attempts:
@@ -129,11 +154,18 @@ async def execute_job(db: AsyncSession, job: Job) -> None:
             delay = settings.JOB_BACKOFF_BASE_SECONDS * (2 ** max(fresh.attempts - 1, 0))
             fresh.run_after = datetime.now(UTC) + timedelta(seconds=delay)
         await db.commit()
+        logger.warning(json.dumps({"event": "job_failed", "kind": fresh.kind, "attempt": fresh.attempts, "status": fresh.status, "error_type": type(exc).__name__}))
 
 
 async def run_once(worker_id: str | None = None) -> int:
-    worker_id = worker_id or f"{socket.gethostname()}:{id(asyncio.current_task())}"
+    worker_id = worker_id or f"{socket.gethostname()}:{os.getpid()}"
     async with async_session_maker() as db:
+        heartbeat = await db.get(WorkerHeartbeat, worker_id)
+        if heartbeat is None:
+            db.add(WorkerHeartbeat(worker_id=worker_id, last_seen_at=datetime.now(UTC)))
+        else:
+            heartbeat.last_seen_at = datetime.now(UTC)
+        await db.commit()
         jobs = await claim_jobs(db, worker_id)
         for job in jobs:
             await execute_job(db, job)
@@ -141,6 +173,7 @@ async def run_once(worker_id: str | None = None) -> int:
 
 
 async def run_forever() -> None:
+    logging.basicConfig(level=logging.INFO)
     while True:
         processed = await run_once()
         if processed == 0:

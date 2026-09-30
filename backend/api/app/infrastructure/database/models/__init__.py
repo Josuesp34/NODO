@@ -6,6 +6,7 @@ from app.infrastructure.database.models.base import Base
 from app.infrastructure.database.models.block import TrainingBlock
 from app.infrastructure.database.models.daily_metrics import DailyPhysiology
 from app.infrastructure.database.models.plan import PrescribedWorkout
+from app.infrastructure.database.models.operations import WorkerHeartbeat
 from app.infrastructure.database.models.product import (
     ActivityLap,
     AssistantConfirmation,
@@ -86,4 +87,5 @@ __all__ = [
     "TrainingBlock",
     "User",
     "UserRoleAssignment",
+    "WorkerHeartbeat",
 ]

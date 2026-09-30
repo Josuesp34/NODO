@@ -7,7 +7,10 @@ const apiUrl = (process.env.NODO_API_URL ?? "http://127.0.0.1:8000/api/v1").repl
 const cookieBase = process.env.SESSION_COOKIE_NAME ?? "nodo_session";
 const accessCookie = `${cookieBase}_access`;
 const refreshCookie = `${cookieBase}_refresh`;
-const secure = process.env.SESSION_COOKIE_SECURE === "true" || process.env.NODE_ENV === "production";
+// La excepción HTTP requiere una demo explícita y un origen exclusivamente loopback.
+const localDemo = process.env.NODO_LOCAL_DEMO === "true"
+  && /^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(process.env.NODO_APP_ORIGIN ?? "");
+const secure = process.env.SESSION_COOKIE_SECURE === "true" || (process.env.NODE_ENV === "production" && !localDemo);
 
 const cookieOptions = {
   httpOnly: true,

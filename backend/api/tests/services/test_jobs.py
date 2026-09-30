@@ -61,12 +61,14 @@ def test_recompute_daily_load_includes_rest_days():
                     select(DailyLoad).where(DailyLoad.athlete_id == athlete.id).order_by(DailyLoad.local_date)
                 )
             ).all()
-            assert [row.local_date for row in rows] == [
+            assert [row.local_date for row in rows[:3]] == [
                 date(2026, 9, 1),
                 date(2026, 9, 2),
                 date(2026, 9, 3),
             ]
             assert rows[1].load_value == 0
+            assert rows[-1].local_date == datetime.now(UTC).date()
+            assert rows[-1].ctl < rows[2].ctl
         await engine.dispose()
 
     asyncio.run(scenario())

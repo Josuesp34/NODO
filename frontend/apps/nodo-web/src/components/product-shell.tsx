@@ -6,6 +6,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { clearOfflineData } from "@/lib/offline-store";
 import { capabilitiesFor, type Capability, type Identity } from "@/lib/contracts";
 import { Brand, LoadingState } from "./ui";
+import { OfflineWorkspace } from "./offline-workspace";
 
 type SessionState = { identity: Identity; capabilities: Capability[] };
 const SessionContext = createContext<SessionState | null>(null);
@@ -40,17 +41,23 @@ export function ProductShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [session, setSession] = useState<SessionState | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [offline, setOffline] = useState(false);
 
   useEffect(() => {
+    setError(null); setOffline(false);
     void fetch("/api/session/me", { cache: "no-store" }).then(async (response) => {
       if (response.status === 401) {
+        clearOfflineData();
         router.replace(`/login?next=${encodeURIComponent(pathname)}`);
         return;
       }
       if (!response.ok) throw new Error("No pudimos validar tu sesión.");
       const identity = await response.json() as Identity;
       setSession({ identity, capabilities: capabilitiesFor(identity) });
-    }).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "No pudimos validar tu sesión."));
+    }).catch((reason: unknown) => {
+      if (!navigator.onLine || reason instanceof TypeError) setOffline(true);
+      else setError(reason instanceof Error ? reason.message : "No pudimos validar tu sesión.");
+    });
   }, [pathname, router]);
 
   const requested: Capability | null = pathname.startsWith("/coach") ? "coach" : pathname.startsWith("/athlete") ? "athlete" : null;
@@ -65,6 +72,7 @@ export function ProductShell({ children }: { children: React.ReactNode }) {
     router.refresh();
   }
 
+  if (offline) return <main id="contenido"><OfflineWorkspace /></main>;
   if (error) return <main className="loading-screen" role="alert">{error}</main>;
   if (!session || !context) return <LoadingState />;
   if (requested && !session.capabilities.includes(requested) && !session.capabilities.includes("staff")) {

@@ -151,7 +151,7 @@ async def require_organization_active(db: AsyncSession, user_id: int, *, organiz
     )
     if organization_id is not None:
         query = query.where(Organization.id == organization_id)
-    rows = (await db.execute(query)).all()
+    rows = (await db.execute(query.execution_options(populate_existing=True))).all()
     if not rows:
         if settings.ENVIRONMENT == "development" and organization_id is None:
             return

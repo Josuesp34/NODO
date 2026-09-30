@@ -12,12 +12,13 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.asymmetric import ec
 from fastapi import HTTPException
 from sqlalchemy import select
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.infrastructure.database.models import User
 from app.infrastructure.database.models.privacy import NotificationDelivery, NotificationPreference, PushSubscription
-from app.infrastructure.database.models.product import Consent, Job
+from app.infrastructure.database.models.product import CoachAthleteAssignment, Consent, Job, Organization, Subscription
 
 CATEGORIES = {"plan", "reminder", "review", "sync"}
 DEFAULT_PUSH_HOSTS = "fcm.googleapis.com,updates.push.services.mozilla.com,web.push.apple.com"
@@ -228,6 +229,41 @@ def _send(info: dict, payload: str) -> int:
         raise RuntimeError("Push transport unavailable") from None
 
 
+async def lock_product_source(db: AsyncSession, job: Job, user: User, source: dict, now: datetime) -> None:
+    """Serialize withdrawal/suspension without reversing API actor→athlete locks.
+
+    The recipient is already locked. Contended source locks use NOWAIT inside a
+    savepoint: release the failed attempt and defer before any provider traffic.
+    """
+    athlete_id = source["athlete_id"]
+    if athlete_id == user.id:
+        return
+    try:
+        async with db.begin_nested():
+            await db.scalar(select(User.id).where(User.id == athlete_id).with_for_update(nowait=True))
+            organization_id = await db.scalar(
+                select(CoachAthleteAssignment.organization_id).where(
+                    CoachAthleteAssignment.coach_id == user.id,
+                    CoachAthleteAssignment.athlete_id == athlete_id,
+                    CoachAthleteAssignment.status == "active",
+                )
+            )
+            if organization_id is not None:
+                await db.scalar(
+                    select(Organization.id).where(Organization.id == organization_id).with_for_update(nowait=True)
+                )
+                await db.scalar(
+                    select(Subscription.id)
+                    .where(Subscription.organization_id == organization_id)
+                    .with_for_update(nowait=True)
+                )
+    except DBAPIError as exc:
+        if getattr(exc.orig, "sqlstate", None) != "55P03" and getattr(exc.orig, "pgcode", None) != "55P03":
+            raise
+        job.run_after = now + timedelta(seconds=5)
+        raise PushDeferred() from None
+
+
 async def send_notification(db: AsyncSession, job: Job, *, transport=None, now: datetime | None = None) -> None:
     now = now or datetime.now(UTC)
     delivery = await db.get(NotificationDelivery, job.payload["delivery_id"])
@@ -271,6 +307,24 @@ async def send_notification(db: AsyncSession, job: Job, *, transport=None, now: 
     if sub.expires_at and aware(sub.expires_at) <= now:
         sub.revoked_at, sub.subscription_enc, delivery.status = now, None, "expired"
         return
+    if "product_source" in job.payload:
+        source = job.payload["product_source"]
+        athlete_id = source.get("athlete_id") if isinstance(source, dict) else None
+        if (
+            not isinstance(athlete_id, int)
+            or isinstance(athlete_id, bool)
+            or athlete_id < 1
+            or source.get("recipient_id") != user.id
+            or source.get("category") != delivery.category
+        ):
+            delivery.status = "cancelled"
+            return
+        await lock_product_source(db, job, user, source, now)
+        from app.services.product_notifications import source_is_current
+
+        if not await source_is_current(db, source, user, now):
+            delivery.status = "cancelled"
+            return
     deadline = None
     if "valid_until" in job.payload:
         try:

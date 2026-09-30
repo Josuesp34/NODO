@@ -41,6 +41,7 @@ async def require_processing_consent(db: AsyncSession, user_id: int, scope: str)
         .where(Consent.user_id == user_id, Consent.scope == scope, Consent.version == "pilot-v1")
         .order_by(Consent.granted_at.desc(), Consent.id.desc())
         .limit(1)
+        .execution_options(populate_existing=True)
     )
     if consent is not None and consent.revoked_at is None:
         return

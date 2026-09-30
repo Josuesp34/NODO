@@ -14,14 +14,20 @@ async def require_assistant_thread_access(db: AsyncSession, user: User, thread: 
     if thread.owner_id != user.id:
         raise HTTPException(404, "Conversación no encontrada")
     await require_role(db, user, thread.role)
+    from app.services.provider_policy import require_provider_consent
+
+    await require_provider_consent(db, user.id, "ai_assistant")
     if thread.role == "athlete" and thread.athlete_scope_id != user.id:
         raise HTTPException(404, "Conversación no encontrada")
     if thread.athlete_scope_id is not None:
         await require_athlete_access(db, user, thread.athlete_scope_id)
+        await require_provider_consent(db, thread.athlete_scope_id, "training_data_processing")
 
 
 async def assistant_message_view(db: AsyncSession, user: User, message: AssistantMessage) -> dict:
     content, citations = message.content, message.citations or []
+    from app.services.provider_policy import require_provider_consent
+
     for citation in citations:
         athlete_id = citation.get("athlete_id") if isinstance(citation, dict) else None
         if (
@@ -30,6 +36,11 @@ async def assistant_message_view(db: AsyncSession, user: User, message: Assistan
             or not await has_athlete_access(db, user, athlete_id)
         ):
             # Removing only a citation would leave the derived sensitive text exposed.
+            content, citations = REDACTED_MESSAGE, []
+            break
+        try:
+            await require_provider_consent(db, athlete_id, "training_data_processing")
+        except HTTPException:
             content, citations = REDACTED_MESSAGE, []
             break
     return {

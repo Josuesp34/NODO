@@ -88,7 +88,8 @@ export async function logoutSession() {
 }
 
 export async function passThrough(response: Response) {
-  const payload = response.status === 204 ? null : await response.arrayBuffer();
+  const streaming = response.headers.get("content-type")?.startsWith("text/event-stream");
+  const payload = response.status === 204 ? null : streaming ? response.body : await response.arrayBuffer();
   const forwarded = new NextResponse(payload, { status: response.status });
   const contentType = response.headers.get("content-type");
   if (contentType) forwarded.headers.set("Content-Type", contentType);

@@ -1,6 +1,6 @@
 import hashlib
 import json
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
@@ -22,7 +22,8 @@ from app.infrastructure.database.models.product import (
     ReviewItem,
 )
 from app.services.access import require_athlete_access, require_role
-from app.services.assistant import SimulatedAssistant, assistant_message_view, require_assistant_thread_access
+from app.services.assistant import assistant_message_view, require_assistant_thread_access
+from app.services.assistant_tools import ToolRead
 from app.services.audit import add_audit
 
 router = APIRouter(prefix="/assistant", tags=["Assistant"])
@@ -71,6 +72,9 @@ async def create_thread(
         athlete_scope_id=scope,
         title=payload.title,
     )
+    from app.services.provider_policy import require_provider_consent
+
+    await require_provider_consent(db, user.id, "ai_assistant")
     db.add(thread)
     await db.commit()
     await db.refresh(thread)
@@ -82,59 +86,6 @@ async def create_thread(
     }
 
 
-async def read_facts(db: AsyncSession, thread: AssistantThread, question: str) -> tuple[list[str], list[dict]]:
-    facts: list[str] = []
-    citations: list[dict] = []
-    if thread.role == "coach" and "revisi" in question.lower():
-        scope_filters = [] if thread.athlete_scope_id is None else [ReviewItem.athlete_id == thread.athlete_scope_id]
-        rows = (
-            await db.scalars(
-                select(ReviewItem)
-                .where(ReviewItem.status.in_(["open", "follow_up"]), *scope_filters)
-                .order_by(ReviewItem.priority.desc())
-                .limit(20)
-            )
-        ).all()
-        for item in rows:
-            try:
-                await require_athlete_access(db, await db.get(User, thread.owner_id), item.athlete_id)
-            except HTTPException:
-                continue
-            facts.append(f"Atleta {item.athlete_id}: {item.reason}.")
-            citations.append(
-                {
-                    "entity": "review_item",
-                    "id": item.id,
-                    "athlete_id": item.athlete_id,
-                    "source": "nodo",
-                }
-            )
-    elif thread.athlete_scope_id is not None:
-        workouts = (
-            await db.scalars(
-                select(PrescribedWorkout)
-                .where(
-                    PrescribedWorkout.athlete_id == thread.athlete_scope_id,
-                    PrescribedWorkout.status == "published",
-                )
-                .order_by(PrescribedWorkout.scheduled_date)
-                .limit(14)
-            )
-        ).all()
-        for workout in workouts:
-            facts.append(f"{workout.scheduled_date.date()}: {workout.title} ({workout.sport_type}).")
-            citations.append(
-                {
-                    "entity": "prescribed_workout",
-                    "id": workout.id,
-                    "athlete_id": workout.athlete_id,
-                    "date": str(workout.scheduled_date.date()),
-                    "source": "nodo",
-                }
-            )
-    return facts, citations
-
-
 @router.post("/threads/{thread_id}/messages")
 async def send_message(
     thread_id: int,
@@ -143,87 +94,13 @@ async def send_message(
     db: AsyncSession = Depends(get_db),
 ):
     thread = await owned_thread(db, thread_id, user)
-    if settings.AI_PROVIDER != "simulated":
-        if not settings.AI_API_KEY:
-            raise HTTPException(503, "AI_CONFIGURATION_REQUIRED")
-        raise HTTPException(501, "El adaptador real de IA todavía requiere validación del proveedor")
-    now = datetime.now(UTC)
-    db.add(
-        AssistantMessage(
-            thread_id=thread.id,
-            author="user",
-            content=payload.content,
-            created_at=now,
-            citations=[],
-        )
-    )
-    confirmation = None
-    if payload.proposed_write is not None:
-        if thread.athlete_scope_id is None:
-            raise HTTPException(422, "La conversación necesita un atleta en alcance")
-        await require_athlete_access(db, user, thread.athlete_scope_id)
-        operation_payload = {
-            "athlete_id": thread.athlete_scope_id,
-            **payload.proposed_write.payload,
-        }
-        if payload.proposed_write.operation == "create_complaint":
-            if thread.role != "athlete" or user.id != thread.athlete_scope_id:
-                raise HTTPException(403, "Sólo el atleta confirma su reporte de molestia")
-            ComplaintCreate.model_validate(payload.proposed_write.payload)
-        elif payload.proposed_write.operation == "create_workout_draft":
-            if thread.role != "coach":
-                raise HTTPException(403, "Sólo el entrenador crea borradores")
-            WorkoutCreate.model_validate(payload.proposed_write.payload)
-        digest = stable_hash(operation_payload)
-        confirmation = AssistantConfirmation(
-            thread_id=thread.id,
-            user_id=user.id,
-            operation=payload.proposed_write.operation,
-            payload=operation_payload,
-            payload_hash=digest,
-            expires_at=now + timedelta(minutes=10),
-        )
-        db.add(confirmation)
-        await db.flush()
-        response_text = "Preparé una vista previa. Confirma explícitamente para realizar la escritura."
-        citations: list[dict] = []
-    else:
-        facts, citations = await read_facts(db, thread, payload.content)
-        draft = SimulatedAssistant().explain(
-            role=thread.role,
-            question=payload.content,
-            facts=facts,
-            citations=citations,
-        )
-        response_text = draft.content
-        citations = draft.citations
-    assistant_message = AssistantMessage(
-        thread_id=thread.id,
-        author="assistant",
-        content=response_text,
-        created_at=now,
-        citations=citations,
-        provider="simulated",
-        model="deterministic-pilot-v1",
-        prompt_version="pilot-policy-v1",
-    )
-    db.add(assistant_message)
-    await db.commit()
-    return {
-        "message": response_text,
-        "citations": citations,
-        "confirmation": (
-            {
-                "id": confirmation.id,
-                "operation": confirmation.operation,
-                "payload": confirmation.payload,
-                "payload_hash": confirmation.payload_hash,
-                "expires_at": confirmation.expires_at,
-            }
-            if confirmation
-            else None
-        ),
-    }
+    from app.services.assistant_runtime import complete_run, prepare_run
+
+    await db.refresh(thread, with_for_update=True)
+    run, prepared = await prepare_run(db, user, thread, payload)
+    if prepared is None:
+        return run.result
+    return await complete_run(db, user, thread, payload, run, prepared)
 
 
 @router.post("/confirmations/{confirmation_id}")
@@ -244,7 +121,11 @@ async def confirm_write(
     if confirmation is None:
         raise HTTPException(404, "Confirmación no encontrada")
     await owned_thread(db, confirmation.thread_id, user)
+    from app.services.provider_policy import require_provider_consent
+
+    await require_provider_consent(db, user.id, "ai_assistant")
     athlete_id = int(confirmation.payload["athlete_id"])
+    await require_provider_consent(db, athlete_id, "training_data_processing")
     await require_athlete_access(db, user, athlete_id)
     if confirmation.payload_hash != payload.payload_hash:
         raise HTTPException(409, "La vista previa cambió; vuelve a generarla")
@@ -317,3 +198,145 @@ async def list_messages(
         .order_by(AssistantMessage.created_at, AssistantMessage.id)
     )
     return [await assistant_message_view(db, user, item) for item in rows.all()]
+
+
+@router.get("/threads")
+async def list_threads(role: str, user: User = Depends(current_user), db: AsyncSession = Depends(get_db)):
+    if role not in {"coach", "athlete"}:
+        raise HTTPException(422, "Rol inválido")
+    await require_role(db, user, role)
+    rows = (
+        await db.scalars(
+            select(AssistantThread)
+            .where(AssistantThread.owner_id == user.id, AssistantThread.role == role)
+            .order_by(AssistantThread.id.desc())
+            .limit(100)
+        )
+    ).all()
+    result = []
+    for thread in rows:
+        try:
+            await require_assistant_thread_access(db, user, thread)
+        except HTTPException:
+            continue
+        result.append(
+            {"id": thread.id, "title": thread.title, "role": thread.role, "athlete_scope_id": thread.athlete_scope_id}
+        )
+    return result
+
+
+@router.post("/tools/read")
+async def tool_read(
+    payload: "ToolRead", role: str, user: User = Depends(current_user), db: AsyncSession = Depends(get_db)
+):
+    from app.services.assistant_tools import read_tool
+
+    if role not in {"coach", "athlete"}:
+        raise HTTPException(422, "Rol inválido")
+    await require_role(db, user, role)
+    from app.services.provider_policy import require_provider_consent
+
+    await require_provider_consent(db, user.id, "ai_assistant")
+    return await read_tool(db, user, payload, role)
+
+
+@router.get("/threads/{thread_id}/confirmations")
+async def list_confirmations(thread_id: int, user: User = Depends(current_user), db: AsyncSession = Depends(get_db)):
+    await owned_thread(db, thread_id, user)
+    from app.services.assistant_runtime import confirmation_view
+
+    rows = (
+        await db.scalars(
+            select(AssistantConfirmation).where(
+                AssistantConfirmation.thread_id == thread_id,
+                AssistantConfirmation.user_id == user.id,
+                AssistantConfirmation.consumed_at.is_(None),
+                AssistantConfirmation.expires_at > datetime.now(UTC),
+            )
+        )
+    ).all()
+    return [confirmation_view(c) for c in rows]
+
+
+@router.post("/runs/{run_id}/cancel")
+async def cancel_run(run_id: int, user: User = Depends(current_user), db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import update
+
+    from app.infrastructure.database.models.providers import AssistantRun
+
+    run = await db.scalar(select(AssistantRun).where(AssistantRun.id == run_id, AssistantRun.user_id == user.id))
+    if not run:
+        raise HTTPException(404, "Petición no encontrada")
+    await owned_thread(db, run.thread_id, user)
+    await db.execute(
+        update(AssistantRun)
+        .where(AssistantRun.id == run.id, AssistantRun.status == "running")
+        .values(status="cancelled")
+    )
+    await db.commit()
+    return {"run_id": run.id, "status": run.status}
+
+
+@router.post("/threads/{thread_id}/messages/stream")
+async def stream_message(
+    thread_id: int, payload: MessageCreate, user: User = Depends(current_user), db: AsyncSession = Depends(get_db)
+):
+    import asyncio
+
+    from fastapi.responses import StreamingResponse
+
+    from app.services.assistant_runtime import complete_run, prepare_run
+
+    thread = await owned_thread(db, thread_id, user)
+    await db.refresh(thread, with_for_update=True)
+    run, prepared = await prepare_run(db, user, thread, payload)
+
+    async def events():
+        yield "data: " + json.dumps({"type": "run", "run_id": run.id}) + "\n\n"
+        try:
+            result = run.result if prepared is None else await complete_run(db, user, thread, payload, run, prepared)
+            # Publish validated complete answer only, not untrusted token fragments.
+            yield "data: " + json.dumps({"type": "result", "result": result}, ensure_ascii=False) + "\n\n"
+        except HTTPException as exc:
+            yield "data: " + json.dumps({"type": "error", "detail": exc.detail}) + "\n\n"
+        except asyncio.CancelledError:
+            return
+
+    return StreamingResponse(
+        events(), media_type="text/event-stream", headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"}
+    )
+
+
+@router.get("/status")
+async def assistant_status(user: User = Depends(current_user), db: AsyncSession = Depends(get_db)):
+    from app.infrastructure.database.models.providers import AssistantBudget
+    from app.services.access import primary_organization_id
+
+    org = await primary_organization_id(db, user.id)
+    month = datetime.now(UTC).date().replace(day=1)
+    user_budget = await db.scalar(
+        select(AssistantBudget).where(
+            AssistantBudget.scope == "user", AssistantBudget.scope_id == user.id, AssistantBudget.month == month
+        )
+    )
+    org_budget = await db.scalar(
+        select(AssistantBudget).where(
+            AssistantBudget.scope == "organization", AssistantBudget.scope_id == org, AssistantBudget.month == month
+        )
+    )
+
+    def view(budget):
+        return {
+            "requests": budget.requests if budget else 0,
+            "tokens": budget.tokens if budget else 0,
+            "estimated_cost_microusd": budget.cost_microusd if budget else 0,
+        }
+
+    return {
+        "provider": settings.AI_PROVIDER,
+        "model": settings.AI_MODEL if settings.AI_PROVIDER == "vertex" else "deterministic-pilot-v1",
+        "user_usage": view(user_budget),
+        "organization_usage": view(org_budget),
+        "manual_available": True,
+        "month": month.isoformat(),
+    }

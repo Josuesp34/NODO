@@ -40,12 +40,17 @@ from app.infrastructure.database.models.product import (
     Subscription,
     UserRoleAssignment,
 )
+from app.infrastructure.database.models.providers import AssistantBudget, AssistantRun, ProviderOAuthState, ProviderRecord
 from app.infrastructure.database.models.telemetry import TelemetryRecord
 from app.infrastructure.database.models.user import User
 
 # Reexportados a propósito: importar este paquete registra cada modelo en el
 # metadata de SQLAlchemy, del que dependen Alembic y el bootstrap local.
 __all__ = [
+    "AssistantBudget",
+    "AssistantRun",
+    "ProviderOAuthState",
+    "ProviderRecord",
     "Activity",
     "ActivityLap",
     "AssistantConfirmation",

@@ -20,6 +20,7 @@ from app.infrastructure.database.models.product import (
     Subscription,
     UserRoleAssignment,
 )
+from app.services import notifications, product_notifications
 from app.services.notifications import PushDeferred, send_notification
 from app.services.product_notifications import dispatch_product_notification, queue_product_event
 
@@ -226,5 +227,47 @@ def test_contended_source_defers_without_reversing_actor_locks(private_api, busy
             await sender.commit()
             assert not transports
             assert (await sender.get(NotificationDelivery, job.payload["delivery_id"])).status == "cancelled"
+
+    run(scenario())
+
+
+@pytest.mark.parametrize("delay_stage", ["source_validation", "thread_pool"])
+def test_deadline_is_rechecked_after_waiting(private_api, monkeypatch, delay_stage):
+    api = private_api
+    enable_push(api, 0)
+    clock = [datetime.now(UTC)]
+
+    class Clock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return clock[0].astimezone(tz) if tz else clock[0].replace(tzinfo=None)
+
+    async def scenario():
+        ids = await prepare_push(api)
+        monkeypatch.setattr(notifications, "datetime", Clock)
+        if delay_stage == "source_validation":
+            original = product_notifications.source_is_current
+
+            async def delayed_source(*args):
+                result = await original(*args)
+                clock[0] += timedelta(seconds=2)
+                return result
+
+            monkeypatch.setattr(product_notifications, "source_is_current", delayed_source)
+        else:
+
+            async def delayed_thread(function, *args):
+                clock[0] += timedelta(seconds=2)
+                return function(*args)
+
+            monkeypatch.setattr(notifications.asyncio, "to_thread", delayed_thread)
+        async with api.sessions() as db:
+            job = await db.get(Job, ids["job_id"])
+            job.payload = {**job.payload, "valid_until": (clock[0] + timedelta(seconds=1)).isoformat()}
+            transports = []
+            await send_notification(db, job, transport=lambda *args: transports.append(args) or 201)
+            await db.commit()
+            assert not transports
+            assert (await db.get(NotificationDelivery, job.payload["delivery_id"])).status == "cancelled"
 
     run(scenario())

@@ -265,7 +265,12 @@ async def lock_product_source(db: AsyncSession, job: Job, user: User, source: di
 
 
 async def send_notification(db: AsyncSession, job: Job, *, transport=None, now: datetime | None = None) -> None:
-    now = now or datetime.now(UTC)
+    injected_now = now
+
+    def current_time() -> datetime:
+        return injected_now if injected_now is not None else datetime.now(UTC)
+
+    now = current_time()
     delivery = await db.get(NotificationDelivery, job.payload["delivery_id"])
     if not delivery or delivery.status != "queued":
         return
@@ -291,6 +296,7 @@ async def send_notification(db: AsyncSession, job: Job, *, transport=None, now: 
         .where(NotificationPreference.user_id == delivery.user_id)
         .execution_options(populate_existing=True)
     )
+    now = current_time()
     if (
         not user
         or user.deleted_at
@@ -325,6 +331,7 @@ async def send_notification(db: AsyncSession, job: Job, *, transport=None, now: 
         if not await source_is_current(db, source, user, now):
             delivery.status = "cancelled"
             return
+    now = current_time()
     deadline = None
     if "valid_until" in job.payload:
         try:
@@ -359,8 +366,19 @@ async def send_notification(db: AsyncSession, job: Job, *, transport=None, now: 
             "tag": f"nodo-{delivery.event_hash[:24]}",
         }
     )
+
+    def transmit_before_deadline():
+        # Waiting for a lock or thread-pool slot must not revive an expired reminder.
+        sent_at = current_time()
+        if deadline is not None and sent_at >= deadline:
+            return None, sent_at
+        return (transport or _send)(info, payload), sent_at
+
     # The lock orders successful revocation after in-flight delivery; subsequent jobs see it.
-    status = await asyncio.to_thread(transport or _send, info, payload)
+    status, now = await asyncio.to_thread(transmit_before_deadline)
+    if status is None:
+        delivery.status = "cancelled"
+        return
     if status in (404, 410):
         sub.subscription_enc, sub.revoked_at, delivery.status = None, now, "expired"
     elif 200 <= status < 300:

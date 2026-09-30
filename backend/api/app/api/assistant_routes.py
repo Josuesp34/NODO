@@ -22,7 +22,7 @@ from app.infrastructure.database.models.product import (
     ReviewItem,
 )
 from app.services.access import require_athlete_access, require_role
-from app.services.assistant import SimulatedAssistant
+from app.services.assistant import SimulatedAssistant, assistant_message_view, require_assistant_thread_access
 from app.services.audit import add_audit
 
 router = APIRouter(prefix="/assistant", tags=["Assistant"])
@@ -40,15 +40,16 @@ def serialize_steps(value) -> list[dict]:
     return [group.model_dump(mode="json") for group in value]
 
 
-async def owned_thread(db: AsyncSession, thread_id: int, user_id: int) -> AssistantThread:
+async def owned_thread(db: AsyncSession, thread_id: int, user: User) -> AssistantThread:
     thread = await db.scalar(
         select(AssistantThread).where(
             AssistantThread.id == thread_id,
-            AssistantThread.owner_id == user_id,
+            AssistantThread.owner_id == user.id,
         )
     )
     if thread is None:
         raise HTTPException(404, "Conversación no encontrada")
+    await require_assistant_thread_access(db, user, thread)
     return thread
 
 
@@ -85,10 +86,11 @@ async def read_facts(db: AsyncSession, thread: AssistantThread, question: str) -
     facts: list[str] = []
     citations: list[dict] = []
     if thread.role == "coach" and "revisi" in question.lower():
+        scope_filters = [] if thread.athlete_scope_id is None else [ReviewItem.athlete_id == thread.athlete_scope_id]
         rows = (
             await db.scalars(
                 select(ReviewItem)
-                .where(ReviewItem.status.in_(["open", "follow_up"]))
+                .where(ReviewItem.status.in_(["open", "follow_up"]), *scope_filters)
                 .order_by(ReviewItem.priority.desc())
                 .limit(20)
             )
@@ -140,7 +142,7 @@ async def send_message(
     user: User = Depends(current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    thread = await owned_thread(db, thread_id, user.id)
+    thread = await owned_thread(db, thread_id, user)
     if settings.AI_PROVIDER != "simulated":
         if not settings.AI_API_KEY:
             raise HTTPException(503, "AI_CONFIGURATION_REQUIRED")
@@ -241,14 +243,15 @@ async def confirm_write(
     )
     if confirmation is None:
         raise HTTPException(404, "Confirmación no encontrada")
+    await owned_thread(db, confirmation.thread_id, user)
+    athlete_id = int(confirmation.payload["athlete_id"])
+    await require_athlete_access(db, user, athlete_id)
     if confirmation.payload_hash != payload.payload_hash:
         raise HTTPException(409, "La vista previa cambió; vuelve a generarla")
     if confirmation.consumed_at is not None:
         return confirmation.result
     if utc_aware(confirmation.expires_at) < datetime.now(UTC):
         raise HTTPException(410, "La confirmación expiró")
-    athlete_id = int(confirmation.payload["athlete_id"])
-    await require_athlete_access(db, user, athlete_id)
     if confirmation.operation == "create_complaint":
         await require_role(db, user, "athlete")
         raw = {key: value for key, value in confirmation.payload.items() if key != "athlete_id"}
@@ -307,19 +310,10 @@ async def list_messages(
     user: User = Depends(current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await owned_thread(db, thread_id, user.id)
+    await owned_thread(db, thread_id, user)
     rows = await db.scalars(
         select(AssistantMessage)
         .where(AssistantMessage.thread_id == thread_id)
         .order_by(AssistantMessage.created_at, AssistantMessage.id)
     )
-    return [
-        {
-            "id": item.id,
-            "author": item.author,
-            "content": item.content,
-            "citations": item.citations,
-            "created_at": item.created_at,
-        }
-        for item in rows.all()
-    ]
+    return [await assistant_message_view(db, user, item) for item in rows.all()]

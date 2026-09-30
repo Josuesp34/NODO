@@ -75,7 +75,8 @@ from app.infrastructure.database.models.product import (
     Subscription,
     UserRoleAssignment,
 )
-from app.services.access import primary_organization_id, require_athlete_access
+from app.services.access import has_athlete_access, primary_organization_id, require_athlete_access
+from app.services.assistant import assistant_message_view, require_assistant_thread_access
 from app.services.audit import add_audit
 
 router = APIRouter(tags=["Pilot product"])
@@ -624,12 +625,23 @@ async def export_account(user: User = Depends(current_user), db: AsyncSession = 
         await db.scalars(select(Complaint).where(Complaint.athlete_id == user.id).order_by(Complaint.id))
     ).all()
     messages = (
-        await db.scalars(
-            select(AssistantMessage)
+        await db.execute(
+            select(AssistantMessage, AssistantThread)
             .join(AssistantThread, AssistantThread.id == AssistantMessage.thread_id)
             .where(AssistantThread.owner_id == user.id)
+            .order_by(AssistantMessage.created_at, AssistantMessage.id)
         )
     ).all()
+    assistant_messages = []
+    for message, thread in messages:
+        try:
+            await require_assistant_thread_access(db, user, thread)
+        except HTTPException as exc:
+            if exc.status_code not in {403, 404}:
+                raise
+            continue
+        visible = await assistant_message_view(db, user, message)
+        assistant_messages.append({key: visible[key] for key in ("author", "content", "created_at")})
     return {
         "generated_at": datetime.now(UTC),
         "user": {"id": user.id, "email": user.email, "timezone": user.timezone},
@@ -646,9 +658,7 @@ async def export_account(user: User = Depends(current_user), db: AsyncSession = 
         "observations": [ObservationView.model_validate(item).model_dump(mode="json") for item in observations],
         "checkins": [CheckinView.model_validate(item).model_dump(mode="json") for item in checkins],
         "complaints": [ComplaintView.model_validate(item).model_dump(mode="json") for item in complaints],
-        "assistant_messages": [
-            {"author": item.author, "content": item.content, "created_at": item.created_at} for item in messages
-        ],
+        "assistant_messages": assistant_messages,
     }
 
 
@@ -864,11 +874,12 @@ async def list_recommendations(
 ):
     filters = [Recommendation.coach_id == coach.id]
     if athlete_id is not None:
+        await require_athlete_access(db, coach, athlete_id)
         filters.append(Recommendation.athlete_id == athlete_id)
     if recommendation_status is not None:
         filters.append(Recommendation.status == recommendation_status)
     rows = await db.scalars(select(Recommendation).where(*filters).order_by(Recommendation.created_at.desc()))
-    return rows.all()
+    return [item for item in rows.all() if await has_athlete_access(db, coach, item.athlete_id)]
 
 
 @router.post("/recommendations/{recommendation_id}/decision")
@@ -887,12 +898,15 @@ async def decide_recommendation(
     )
     if recommendation is None:
         raise HTTPException(404, "Propuesta pendiente no encontrada")
+    await require_athlete_access(db, coach, recommendation.athlete_id)
     if payload.action == "approve":
         changes = WorkoutChanges.model_validate(recommendation.changes).model_dump(exclude_none=True)
         changed = await db.execute(
             update(PrescribedWorkout)
             .where(
                 PrescribedWorkout.id == recommendation.workout_id,
+                PrescribedWorkout.athlete_id == recommendation.athlete_id,
+                PrescribedWorkout.coach_id == coach.id,
                 PrescribedWorkout.version == recommendation.base_plan_version,
                 PrescribedWorkout.status == "draft",
             )

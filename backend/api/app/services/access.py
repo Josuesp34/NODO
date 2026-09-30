@@ -75,6 +75,16 @@ async def require_athlete_access(db: AsyncSession, user: User, athlete_id: int) 
     return athlete
 
 
+async def has_athlete_access(db: AsyncSession, user: User, athlete_id: int) -> bool:
+    try:
+        await require_athlete_access(db, user, athlete_id)
+    except HTTPException as exc:
+        if exc.status_code not in {403, 404}:
+            raise
+        return False
+    return True
+
+
 async def primary_organization_id(db: AsyncSession, user_id: int) -> int:
     organization_id = await db.scalar(
         select(OrganizationMembership.organization_id)

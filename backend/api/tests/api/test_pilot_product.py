@@ -4,13 +4,16 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from fastapi.testclient import TestClient
 from garmin_fit_sdk import Encoder, Profile
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.infrastructure.database.models import Base
+from app.infrastructure.database.models import Base, PrescribedWorkout
+from app.infrastructure.database.models.product import Decision, Recommendation, UserRoleAssignment
 from app.main import get_application
+from app.services.assistant import REDACTED_MESSAGE
 
 
 @pytest.fixture
@@ -464,3 +467,202 @@ def test_consent_export_and_account_deidentification(pilot_api):
     )
     assert deleted.status_code == 204, deleted.text
     assert pilot_api.get("/api/v1/auth/me", headers=athlete_headers).status_code == 401
+
+
+def create_privacy_workout(client, coach_headers, athlete_id, *, title="Sesión privada", published=False):
+    response = client.post(
+        f"/api/v1/athletes/{athlete_id}/workouts",
+        headers=coach_headers,
+        json={
+            "title": title,
+            "scheduled_date": "2026-10-01T07:00:00-06:00",
+            "sport_type": "running",
+            "steps": [{"repetitions": 1, "steps": [{"kind": "work", "duration_sec": 1800}]}],
+        },
+    )
+    assert response.status_code == 201, response.text
+    workout = response.json()
+    if published:
+        assert (
+            client.post(
+                f"/api/v1/athletes/{athlete_id}/workouts/{workout['id']}/publish",
+                headers=coach_headers,
+                json={"expected_version": workout["version"]},
+            ).status_code
+            == 200
+        )
+    return workout
+
+
+@pytest.mark.parametrize("consume_confirmation", [False, True])
+def test_revocation_blocks_scoped_assistant_history_reads_and_confirmations(pilot_api, consume_confirmation):
+    coach_headers = register_and_login(pilot_api)
+    athlete, _ = invite_and_activate(pilot_api, coach_headers)
+    create_privacy_workout(pilot_api, coach_headers, athlete["id"], published=True)
+    thread = pilot_api.post(
+        "/api/v1/assistant/threads",
+        headers=coach_headers,
+        json={"role": "coach", "athlete_scope_id": athlete["id"]},
+    )
+    assert thread.status_code == 201
+    messages_url = f"/api/v1/assistant/threads/{thread.json()['id']}/messages"
+    answer = pilot_api.post(messages_url, headers=coach_headers, json={"content": "¿Qué sesiones tiene?"})
+    assert answer.status_code == 200
+    assert "Sesión privada" in answer.json()["message"]
+    preview = pilot_api.post(
+        messages_url,
+        headers=coach_headers,
+        json={
+            "content": "Prepara un borrador",
+            "proposed_write": {
+                "operation": "create_workout_draft",
+                "payload": {
+                    "title": "Borrador confirmado",
+                    "scheduled_date": "2026-10-02T07:00:00-06:00",
+                    "sport_type": "running",
+                    "steps": [{"repetitions": 1, "steps": [{"kind": "work", "duration_sec": 1800}]}],
+                },
+            },
+        },
+    )
+    assert preview.status_code == 200
+    confirmation = preview.json()["confirmation"]
+    confirmation_url = f"/api/v1/assistant/confirmations/{confirmation['id']}"
+    confirmation_payload = {"payload_hash": confirmation["payload_hash"]}
+    if consume_confirmation:
+        assert pilot_api.post(confirmation_url, headers=coach_headers, json=confirmation_payload).status_code == 200
+    assert pilot_api.get(messages_url, headers=coach_headers).status_code == 200
+    assert pilot_api.delete(f"/api/v1/auth/athletes/{athlete['id']}", headers=coach_headers).status_code == 204
+
+    assert pilot_api.get(messages_url, headers=coach_headers).status_code == 404
+    denied = pilot_api.post(messages_url, headers=coach_headers, json={"content": "¿Qué sesiones tiene?"})
+    assert denied.status_code == 404
+    assert "Sesión privada" not in denied.text
+    assert pilot_api.post(confirmation_url, headers=coach_headers, json=confirmation_payload).status_code == 404
+    exported = pilot_api.get("/api/v1/account/export", headers=coach_headers)
+    assert exported.status_code == 200
+    assert exported.json()["assistant_messages"] == []
+
+
+def test_general_assistant_redacts_revoked_evidence_and_preserves_authorized_athletes(pilot_api):
+    coach_headers = register_and_login(pilot_api)
+    first, first_headers = invite_and_activate(pilot_api, coach_headers, "first@nodo.com")
+    second, second_headers = invite_and_activate(pilot_api, coach_headers, "second@nodo.com")
+    for athlete, headers in ((first, first_headers), (second, second_headers)):
+        response = pilot_api.post(
+            f"/api/v1/athletes/{athlete['id']}/complaints",
+            headers=headers,
+            json={
+                "zone": "tobillo",
+                "laterality": "right",
+                "intensity_0_10": 5,
+                "started_on": "2026-09-20",
+                "limits_movement": False,
+            },
+        )
+        assert response.status_code == 201
+    scoped = pilot_api.post(
+        "/api/v1/assistant/threads",
+        headers=coach_headers,
+        json={"role": "coach", "athlete_scope_id": first["id"]},
+    ).json()
+    scoped_answer = pilot_api.post(
+        f"/api/v1/assistant/threads/{scoped['id']}/messages",
+        headers=coach_headers,
+        json={"content": "¿Quién requiere revisión?"},
+    )
+    assert scoped_answer.status_code == 200
+    assert {item["athlete_id"] for item in scoped_answer.json()["citations"]} == {first["id"]}
+
+    general = pilot_api.post("/api/v1/assistant/threads", headers=coach_headers, json={"role": "coach"}).json()
+    messages_url = f"/api/v1/assistant/threads/{general['id']}/messages"
+    mixed = pilot_api.post(messages_url, headers=coach_headers, json={"content": "¿Quién requiere revisión?"})
+    assert mixed.status_code == 200
+    assert {item["athlete_id"] for item in mixed.json()["citations"]} == {first["id"], second["id"]}
+    assert pilot_api.delete(f"/api/v1/auth/athletes/{first['id']}", headers=coach_headers).status_code == 204
+
+    history = pilot_api.get(messages_url, headers=coach_headers)
+    assert history.status_code == 200
+    old_answer = next(item for item in history.json() if item["author"] == "assistant")
+    assert old_answer["content"] == REDACTED_MESSAGE
+    assert old_answer["citations"] == []
+    current = pilot_api.post(messages_url, headers=coach_headers, json={"content": "¿Quién requiere revisión?"})
+    assert current.status_code == 200
+    assert {item["athlete_id"] for item in current.json()["citations"]} == {second["id"]}
+    assert f"Atleta {first['id']}:" not in current.json()["message"]
+    exported = pilot_api.get("/api/v1/account/export", headers=coach_headers)
+    assert exported.status_code == 200
+    assistant_messages = [item for item in exported.json()["assistant_messages"] if item["author"] == "assistant"]
+    assert len(assistant_messages) == 2
+    assert assistant_messages[0]["content"] == REDACTED_MESSAGE
+    assert f"Atleta {second['id']}:" in assistant_messages[1]["content"]
+    assert f"Atleta {first['id']}:" not in exported.text
+
+
+def test_assistant_rechecks_role_when_loading_or_writing_existing_thread(pilot_api):
+    coach_headers = register_and_login(pilot_api)
+    coach_id = pilot_api.get("/api/v1/auth/me", headers=coach_headers).json()["id"]
+    thread = pilot_api.post("/api/v1/assistant/threads", headers=coach_headers, json={"role": "coach"}).json()
+    messages_url = f"/api/v1/assistant/threads/{thread['id']}/messages"
+    assert pilot_api.post(messages_url, headers=coach_headers, json={"content": "Hola"}).status_code == 200
+
+    async def revoke_role():
+        async for db in pilot_api.app.dependency_overrides[get_db]():
+            await db.execute(
+                delete(UserRoleAssignment).where(
+                    UserRoleAssignment.user_id == coach_id, UserRoleAssignment.role == "coach"
+                )
+            )
+            await db.commit()
+
+    asyncio.run(revoke_role())
+    assert pilot_api.get(messages_url, headers=coach_headers).status_code == 403
+    assert pilot_api.post(messages_url, headers=coach_headers, json={"content": "Hola"}).status_code == 403
+    assert pilot_api.get("/api/v1/account/export", headers=coach_headers).json()["assistant_messages"] == []
+
+
+@pytest.mark.parametrize("action", ["approve", "reject"])
+def test_revoked_coach_cannot_read_or_decide_recommendations_and_does_not_mutate(pilot_api, action):
+    coach_headers = register_and_login(pilot_api)
+    revoked, _ = invite_and_activate(pilot_api, coach_headers, "revoked@nodo.com")
+    active, _ = invite_and_activate(pilot_api, coach_headers, "active@nodo.com")
+    created = {}
+    for athlete in (revoked, active):
+        workout = create_privacy_workout(pilot_api, coach_headers, athlete["id"])
+        recommendation = pilot_api.post(
+            "/api/v1/recommendations",
+            headers=coach_headers,
+            json={
+                "athlete_id": athlete["id"],
+                "workout_id": workout["id"],
+                "evidence": [{"source": "checkin", "id": 1}],
+                "changes": {"title": "Cambio propuesto"},
+            },
+        )
+        assert recommendation.status_code == 201
+        created[athlete["id"]] = (workout, recommendation.json())
+    scoped_url = f"/api/v1/recommendations?athlete_id={revoked['id']}&status=pending"
+    assert pilot_api.get(scoped_url, headers=coach_headers).status_code == 200
+    assert pilot_api.delete(f"/api/v1/auth/athletes/{revoked['id']}", headers=coach_headers).status_code == 204
+
+    assert pilot_api.get(scoped_url, headers=coach_headers).status_code == 404
+    remaining = pilot_api.get("/api/v1/recommendations?status=pending", headers=coach_headers)
+    assert remaining.status_code == 200
+    assert [item["id"] for item in remaining.json()] == [created[active["id"]][1]["id"]]
+    workout, recommendation = created[revoked["id"]]
+    denied = pilot_api.post(
+        f"/api/v1/recommendations/{recommendation['id']}/decision",
+        headers=coach_headers,
+        json={"action": action},
+    )
+    assert denied.status_code == 404
+
+    async def verify_no_mutation():
+        async for db in pilot_api.app.dependency_overrides[get_db]():
+            stored = await db.get(PrescribedWorkout, workout["id"])
+            proposal = await db.get(Recommendation, recommendation["id"])
+            assert (stored.title, stored.version, stored.status) == ("Sesión privada", 1, "draft")
+            assert proposal.status == "pending"
+            assert await db.scalar(select(Decision.id).where(Decision.recommendation_id == proposal.id)) is None
+
+    asyncio.run(verify_no_mutation())

@@ -151,6 +151,17 @@ async def confirm_write(
                 status="open",
             )
         )
+        from app.services.product_notifications import notify_assigned_coaches
+
+        await notify_assigned_coaches(
+            db,
+            athlete_id=complaint.athlete_id,
+            category="review",
+            event_key=f"complaint:{complaint.id}:{complaint.version}",
+            entity="complaint",
+            entity_id=complaint.id,
+            entity_version=complaint.version,
+        )
         result = {"entity": "complaint", "id": complaint.id}
     elif confirmation.operation == "create_workout_draft":
         await require_role(db, user, "coach")

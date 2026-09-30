@@ -11,7 +11,7 @@ from sqlalchemy.pool import StaticPool
 from app.core.config import settings
 from app.core.database import get_db
 from app.infrastructure.database.models import Base, PrescribedWorkout
-from app.infrastructure.database.models.product import Decision, Recommendation, UserRoleAssignment
+from app.infrastructure.database.models.product import Decision, Job, Recommendation, ReviewItem, UserRoleAssignment
 from app.main import get_application
 from app.services.assistant import REDACTED_MESSAGE
 
@@ -31,6 +31,7 @@ def pilot_api(monkeypatch):
 
     asyncio.run(setup())
     app = get_application()
+    app.state.test_sessions = sessions
 
     async def override():
         async with sessions() as session:
@@ -262,6 +263,16 @@ def test_assistant_requires_confirmation_and_double_confirm_is_idempotent(pilot_
     assert confirmed.status_code == repeated.status_code == 200
     assert confirmed.json() == repeated.json()
     assert len(pilot_api.get(f"/api/v1/athletes/{athlete['id']}/complaints", headers=athlete_headers).json()) == 1
+
+    async def stored_notice():
+        async with pilot_api.app.state.test_sessions() as db:
+            jobs = (await db.scalars(select(Job).where(Job.kind == "product_notification"))).all()
+            reviews = (await db.scalars(select(ReviewItem))).all()
+            assert len(jobs) == len(reviews) == 1
+            assert jobs[0].payload["entity"] == "complaint"
+            assert jobs[0].payload["entity_id"] == confirmed.json()["id"]
+
+    asyncio.run(stored_notice())
 
 
 def test_recommendation_uses_compare_and_swap_and_only_edits_drafts(pilot_api):

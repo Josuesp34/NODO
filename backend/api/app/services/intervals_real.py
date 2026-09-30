@@ -472,6 +472,11 @@ async def execute_intervals_job(db, job):
                 connection.status = "reconnect_required"
                 connection.access_token_enc = None
                 connection.refresh_token_enc = None
+                from app.services.product_notifications import notify_sync_problem
+
+                await notify_sync_problem(
+                    db, athlete_id=athlete_id, connection_id=connection.id, episode_key=str(job_id)
+                )
             return
         raise
     if event:

@@ -159,6 +159,10 @@ async def execute_job(db: AsyncSession, job: Job) -> None:
             from app.services.intervals_real import execute_intervals_disconnect_job
 
             await execute_intervals_disconnect_job(db, job)
+        elif job.kind == "product_notification":
+            from app.services.product_notifications import dispatch_product_notification
+
+            await dispatch_product_notification(db, job)
         elif await dispatch_privacy_job(db, job):
             pass
         else:
@@ -208,9 +212,11 @@ async def execute_job(db: AsyncSession, job: Job) -> None:
 async def run_once(worker_id: str | None = None) -> int:
     worker_id = worker_id or f"{socket.gethostname()}:{os.getpid()}"
     async with async_session_maker() as db:
+        from app.services.notification_scheduler import schedule_workout_reminders
         from app.services.privacy import schedule_retention
 
         await schedule_retention(db)
+        await schedule_workout_reminders(db)
         heartbeat = await db.get(WorkerHeartbeat, worker_id)
         if heartbeat is None:
             db.add(WorkerHeartbeat(worker_id=worker_id, last_seen_at=datetime.now(UTC)))

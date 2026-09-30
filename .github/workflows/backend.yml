@@ -68,7 +68,7 @@ jobs:
       - run: alembic -c alembic.ini downgrade base
       - run: alembic -c alembic.ini upgrade head
       - name: Verify real PostgreSQL permissions, erasure and concurrent claims
-        run: python -m pytest -q tests/api/test_product_completion.py tests/api/test_privacy_notifications.py tests/services/test_worker_claims.py
+        run: python -m pytest -q
 
   container:
     runs-on: ubuntu-latest

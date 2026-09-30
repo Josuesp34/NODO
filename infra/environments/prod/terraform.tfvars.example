@@ -1,0 +1,33 @@
+# Copiar a terraform.tfvars fuera de control de versiones y reemplazar todos los valores.
+# Ninguno de estos textos representa un ID, una región, un precio o una credencial reales.
+project_id         = "REPLACE_WITH_PRODUCTION_PROJECT_ID"
+region             = "REPLACE_WITH_APPROVED_GCP_REGION"
+database_tier      = "REPLACE_WITH_APPROVED_CLOUD_SQL_TIER"
+bucket_name_prefix = "REPLACE_WITH_GLOBALLY_UNIQUE_PREFIX"
+github_repository  = "REPLACE_WITH_OWNER/REPOSITORY"
+
+# La primera aplicación crea únicamente la base de plataforma.
+deploy_workloads         = false
+enable_worker            = false
+enable_monitoring_alerts = false
+
+# Definir sólo después de aprobación financiera y configuración de canales.
+# billing_account_id                  = "REPLACE_WITH_BILLING_ACCOUNT_ID"
+# monthly_budget_units                = 0
+# monitoring_notification_channel_ids = ["REPLACE_WITH_CHANNEL_RESOURCE_NAME"]
+
+# Producción recibe exactamente los digests promovidos desde staging.
+# api_image = "REGION-docker.pkg.dev/PROJECT/REPOSITORY/api@sha256:REPLACE_64_HEX"
+# pwa_image = "REGION-docker.pkg.dev/PROJECT/REPOSITORY/pwa@sha256:REPLACE_64_HEX"
+# api_secret_bindings = {
+#   DATABASE_URL = { secret_id = "database-url", version = "REPLACE_WITH_VERSION" }
+#   RESEND_API_KEY = { secret_id = "resend-api-key", version = "REPLACE_WITH_VERSION" }
+#   EMAIL_QUEUE_KEY = { secret_id = "email-queue-key", version = "REPLACE_WITH_VERSION" }
+# }
+# worker_secret_bindings = {
+#   DATABASE_URL = { secret_id = "database-url", version = "REPLACE_WITH_VERSION" }
+#   RESEND_API_KEY = { secret_id = "resend-api-key", version = "REPLACE_WITH_VERSION" }
+#   EMAIL_QUEUE_KEY = { secret_id = "email-queue-key", version = "REPLACE_WITH_VERSION" }
+# }
+# api_env = { RESEND_FROM_EMAIL = "NODO <acceso@DOMINIO_VERIFICADO>", PUBLIC_APP_URL = "https://DOMINIO_APROBADO" }
+# worker_env = { RESEND_FROM_EMAIL = "NODO <acceso@DOMINIO_VERIFICADO>", PUBLIC_APP_URL = "https://DOMINIO_APROBADO", ENVIRONMENT = "production" }

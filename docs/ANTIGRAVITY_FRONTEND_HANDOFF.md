@@ -1,3 +1,9 @@
+# Referencia histórica de frontend · 13-09-2026
+
+Este relevo describe la arquitectura anterior y se conserva como antecedente. Para desarrollar o entregar la versión actual, leer [FRONTEND.md](FRONTEND.md), [FUNCIONALIDADES_PRODUCTO.md](FUNCIONALIDADES_PRODUCTO.md) y [HANDOVER_JOSUE.md](HANDOVER_JOSUE.md). La superficie activa es `frontend/apps/nodo-web`, una PWA con BFF; las limitaciones históricas de abajo no son el inventario vigente.
+
+---
+
 # Relevo de frontend para Antigravity
 
 Actualizado: 13 de septiembre de 2026. Este documento es la fuente de contexto para iniciar el desarrollo visual sin alterar los límites del MVP.

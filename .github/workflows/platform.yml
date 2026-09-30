@@ -1,0 +1,43 @@
+name: Platform checks
+
+on:
+  push:
+    paths:
+      - "infra/**"
+      - "ops/**"
+      - ".github/workflows/**"
+  pull_request:
+    paths:
+      - "infra/**"
+      - "ops/**"
+      - ".github/workflows/**"
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd
+        with:
+          terraform_version: 1.13.3
+          terraform_wrapper: false
+      - run: terraform fmt -check -recursive infra
+      - name: Validate staging without credentials or remote state
+        working-directory: infra/environments/staging
+        run: |
+          terraform init -backend=false -input=false
+          terraform validate
+      - name: Validate production without credentials or remote state
+        working-directory: infra/environments/prod
+        run: |
+          terraform init -backend=false -input=false
+          terraform validate
+
+  shell:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - run: bash -n ops/*.sh

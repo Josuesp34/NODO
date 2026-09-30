@@ -23,16 +23,21 @@ def test_irregular_sampling_uses_elapsed_time_without_inventing_timer():
 
 
 def test_timer_summary_excludes_pauses_and_precedes_record_mean():
-    result = extract_session_metrics(clean_telemetry_to_dataframe(records()), {
-        "total_timer_time": 8, "avg_heart_rate": 151, "max_heart_rate": 165,
-    })
+    result = extract_session_metrics(
+        clean_telemetry_to_dataframe(records()),
+        {
+            "total_timer_time": 8,
+            "avg_heart_rate": 151,
+            "max_heart_rate": 165,
+        },
+    )
     assert result["duration_min"] == pytest.approx(8 / 60)
     assert result["avg_hr"] == 151
     assert result["trimp_inputs_available"]
 
 
 def test_missing_hr_does_not_erase_duration():
-    df = clean_telemetry_to_dataframe([{ "timestamp": r["timestamp"] } for r in records()])
+    df = clean_telemetry_to_dataframe([{"timestamp": r["timestamp"]} for r in records()])
     result = extract_session_metrics(df)
     assert result["avg_hr"] is None
     assert result["max_hr"] is None

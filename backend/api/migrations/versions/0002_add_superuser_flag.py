@@ -4,6 +4,7 @@ Revision ID: 0002_add_superuser_flag
 Revises: 0001_nodo_core
 Create Date: 2026-09-13
 """
+
 import sqlalchemy as sa
 from alembic import op
 

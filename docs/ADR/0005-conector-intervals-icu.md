@@ -1,6 +1,14 @@
 # ADR 0005: intervals.icu como vía principal de datos, con carga manual de FIT como respaldo
 
-**Estado:** aceptada el 14 de septiembre de 2026. Se implementa en la fase F6 de `../PLAN_EJECUCION.md`. Todavía no está construida y depende de una compuerta humana.
+**Estado:** aceptada el 14 de septiembre de 2026 y confirmada por Brandon el 23 de septiembre de 2026; implementación parcial y todavía bloqueada por registro/aprobación de la app OAuth.
+
+## Estado implementado
+
+- Modelo `athlete_connections` con estados y campos para tokens cifrados.
+- Consulta de estado, modo `simulated`, revocación local y normalización determinista de observaciones probados.
+- La PWA ofrece simulación y carga FIT de respaldo.
+
+No están implementados el inicio/callback OAuth, `state` anti-CSRF, intercambio/cifrado del token, revocación remota, webhooks, backfill o sincronización real. Las variables de credenciales no están configuradas. `authorization_pending` no equivale a una conexión activa.
 
 ## Contexto
 
@@ -12,7 +20,7 @@ Strava queda fuera por sus términos: restringen mostrar datos de un atleta a un
 
 Se integra **intervals.icu** como fuente principal, y se pide al atleta conectar su reloj **directo** (Garmin, COROS, Polar, Wahoo) en intervals, no vía Strava.
 
-- OAuth 2.0 con scopes, estado anti-CSRF en el inicio y renovación de token.
+- OAuth 2.0 con scopes mínimos y estado anti-CSRF. La documentación vigente no publica refresh token; un token inválido exige reconexión.
 - `athlete_connections` guarda los tokens **cifrados en reposo**, con la clave en variable de entorno (`PROVIDER_TOKEN_ENCRYPTION_KEY`), nunca en Git y distinta por entorno.
 - Webhooks de actividad, calendario y atleta. El receptor **sólo** registra en `ingestion_events` y encola: no procesa dentro de la petición HTTP (ADR 0002).
 - Backfill inicial acotado, 90 días por defecto y configurable.
@@ -31,7 +39,7 @@ Registrar la aplicación OAuth en intervals.icu y entregar `client_id` y `client
 - Se acepta una dependencia de una plataforma pequeña, sin SLA, que además vende funciones de entrenador por unos 4 USD al mes. Se documenta como riesgo con plan B en el plan de ejecución, sección 9.
 - Un cambio de términos, una caída o un límite nuevo de su API se detecta por errores repetidos en la cola y por su foro. La respuesta es la carga manual, y evaluar un agregador de pago sólo si el ingreso lo sostiene.
 - El texto que devuelva el proveedor —nombres de actividad, notas, descripciones— es **dato**, nunca instrucción para el copiloto (regla 5 del plan).
-- Criterios que las pruebas deben sostener: un webhook duplicado no duplica actividad; un token expirado se renueva y reintenta una vez; una revocación deja la conexión en `revoked` sin borrar datos ya recibidos; una observación de HRV conserva su método.
+- Criterios que las pruebas deben sostener: un webhook duplicado no duplica actividad; un token inválido marca la conexión caída y exige reconexión; una revocación deja la conexión en `revoked` sin borrar datos ya recibidos; una observación de HRV conserva su método.
 
 ## Alternativas descartadas
 

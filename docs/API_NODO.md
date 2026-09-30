@@ -1,42 +1,113 @@
-# API inicial de NODO y NODO Lab
+# API NODO v1
 
-Esta API es la fuente de datos única de NODO y NODO Lab. El contrato se encuentra en `/docs` cuando el servidor está activo. La versión inicial es `/api/v1`; no cambiar contratos publicados de forma incompatible sin introducir versión o un periodo de compatibilidad.
+Actualizado: 23 de septiembre de 2026.
 
-## Flujo de identidad
+La API FastAPI es la fuente de verdad para NODO y NODO Lab. El contrato ejecutable está en `/docs` cuando el servidor está activo. Este documento describe capacidades y permisos; los schemas exactos se consultan en OpenAPI.
 
-1. En desarrollo, crear un entrenador con `POST /auth/coaches` tras activar `ALLOW_COACH_REGISTRATION=true`.
-2. Iniciar sesión con `POST /auth/login`. La respuesta entrega un token de acceso breve y un token de renovación.
-3. Incluir el token de acceso en `Authorization: Bearer <token>`.
-4. El entrenador crea una invitación con `POST /auth/athletes`.
-5. El atleta activa su cuenta con `POST /auth/athletes/activate` y define su contraseña.
+Base: `/api/v1`.
 
-Para el equipo de desarrollo existe `POST /auth/superusers`. Sólo responde en `development` si `ALLOW_SUPERUSER_BOOTSTRAP=true` y el header `X-NODO-Development-Key` coincide con `DEV_SUPERUSER_BOOTSTRAP_TOKEN`. La clave vive únicamente en `.env`. El superusuario es una capacidad administrativa de aplicación; no sustituye los futuros roles múltiples de entrenador y atleta.
+## Identidad y sesión
 
-El endpoint de invitación devuelve el token en la respuesta únicamente durante esta fase de desarrollo. La aplicación móvil no debe almacenarlo después de activar la cuenta. Antes del piloto externo, sustituir ese retorno por un canal de entrega verificado y agregar recuperación de contraseña.
+| Acción | Endpoint | Acceso |
+|---|---|---|
+| Alta local de coach | `POST /auth/coaches` | Sólo desarrollo con bandera explícita |
+| Bootstrap de superusuario | `POST /auth/superusers` | Sólo desarrollo, bandera y secreto |
+| Login / refresh / logout | `POST /auth/login`, `/refresh`, `/logout` | Cuenta válida |
+| Identidad actual | `GET /auth/me`, `/identity` | Sesión |
+| Invitar/listar atletas | `POST/GET /auth/athletes` | Coach |
+| Activar atleta | `POST /auth/athletes/activate` | Código de un solo uso |
+| Solicitar recuperación | `POST /auth/password-reset/request` | Pública; respuesta genérica `202` |
+| Confirmar recuperación | `POST /auth/password-reset/confirm` | Correo, código y nueva contraseña |
+| Revocar asignación | `DELETE /auth/athletes/{athlete_id}` | Coach asignado |
+| Añadir rol | `POST /auth/users/{user_id}/roles/{role}` | Superusuario |
 
-`POST /auth/refresh` rota el token de renovación: un token que ya se usó deja de servir. `POST /auth/logout` revoca la sesión actual. NODO almacena tokens opacos solo en su forma resumida en la base de datos; la aplicación debe guardarlos en almacenamiento seguro de cada plataforma, no en logs ni URLs.
+La PWA no recibe tokens en JavaScript: el BFF guarda acceso y refresh en cookies `httpOnly`. Refresh rota la sesión y logout la revoca.
+En producción la invitación requiere correo configurado y devuelve `invitation_token: null`; el código se encola cifrado para Resend. En desarrollo sin correo configurado se conserva la entrega manual de código. Recuperación requiere correo configurado, expira en 30 minutos, limita reenvíos a 15 minutos, invalida el código tras usarlo y revoca todas las sesiones previas. La cola confirma aceptación, no entrega final.
 
 ## Planificación
 
-Los endpoints cuelgan de `/athletes/{athlete_id}`.
+Los bloques y sesiones cuelgan de `/athletes/{athlete_id}`.
 
-| Acción | Endpoint | Quién puede hacerlo |
-|---|---|---|
-| Crear bloque | `POST /blocks` | Entrenador asignado |
-| Consultar bloques | `GET /blocks` | Entrenador asignado o atleta dueño |
-| Crear sesión | `POST /workouts` | Entrenador asignado |
-| Consultar sesiones | `GET /workouts?start=YYYY-MM-DD&end=YYYY-MM-DD` | Entrenador asignado o atleta dueño |
-| Reemplazar borrador | `PUT /workouts/{workout_id}` | Entrenador asignado |
-| Publicar sesión | `POST /workouts/{workout_id}/publish` | Entrenador asignado |
+| Acción | Endpoint |
+|---|---|
+| Crear/listar bloques | `POST/GET /blocks` |
+| Crear/listar sesiones | `POST/GET /workouts` |
+| Editar borrador | `PUT /workouts/{workout_id}` |
+| Publicar | `POST /workouts/{workout_id}/publish` |
 
-Una sesión contiene pasos explícitos: calentamiento, trabajo, recuperación o vuelta a la calma; cada paso tiene duración o distancia, y opcionalmente un objetivo de ritmo, potencia, frecuencia cardiaca o esfuerzo percibido. Un grupo de pasos tiene repeticiones, por lo que el contrato expresa intervalos sin depender de texto libre.
+Edición y publicación usan `expected_version`; una copia obsoleta recibe `409`. El atleta sólo puede leer sesiones publicadas.
 
-Las modificaciones y publicaciones requieren `expected_version`. Si el calendario cambió desde que se abrió en NODO Lab, el servidor responde `409`; la interfaz debe refrescar y pedir una decisión, no sobrescribir el cambio de otra persona.
+## Perfil, contexto y seguimiento
 
-## Límites actuales
+- `GET/PUT /athletes/{athlete_id}/profile`
+- `GET/POST /athletes/{athlete_id}/competitions`
+- `GET/POST /athletes/{athlete_id}/observations`
+- `PUT /athletes/{athlete_id}/checkins/{local_date}`
+- `GET/POST /athletes/{athlete_id}/complaints`
+- `POST /complaints/{complaint_id}/updates`
+- `GET /review-items`
+- `POST /review-items/{item_id}/decision`
 
-- No hay aún organizaciones con varios entrenadores, notificaciones, recuperación de contraseña ni correo de invitación.
-- El atleta se vincula a un entrenador. La asociación con equipos llegará antes del piloto de varios coaches.
-- La importación FIT vigente sigue siendo un prototipo local, separada de esta identidad. El siguiente bloque la asociará a un atleta autenticado e incorporará deduplicación.
-- Las sesiones se guardan con pasos JSON validados. La comparación contra vueltas FIT todavía no está implementada.
-- No usar credenciales reales en el archivo `.env` ni tokens de API en documentación, capturas o commits.
+## Actividades y FIT
+
+- `POST /athletes/{athlete_id}/activities/fit`: importación autenticada.
+- `GET /athletes/{athlete_id}/activities`: historial básico.
+- `POST /upload-fit/`: ruta heredada cerrada con `410`.
+
+FIT valida extensión, contenido, una sola sesión y límite de 10 MiB; deduplica por atleta/hash, conserva laps/telemetría y encola carga diaria. Fuera de desarrollo exige consentimiento vigente.
+
+## Grupos, plantillas y recomendaciones
+
+- `POST/GET /groups`
+- `POST/GET /groups/{group_id}/members`
+- `POST/GET /templates`
+- `POST /templates/{template_id}/apply`
+- `POST/GET /recommendations`
+- `POST /recommendations/{recommendation_id}/decision`
+
+La aplicación de plantillas es idempotente. Las recomendaciones protegen la versión base del plan.
+
+## Privacidad y cuenta
+
+- `POST/GET /consents`
+- `DELETE /consents/{consent_id}`
+- `GET /account/export`
+- `DELETE /account`
+
+Eliminar la cuenta requiere contraseña y desidentifica al usuario después de borrar o revocar sus datos operativos y sesiones.
+
+## Comercial administrado
+
+- `POST /admin/commercial/plans`
+- `POST /admin/commercial/subscriptions`
+- `POST /admin/commercial/payments`
+
+Sólo superusuario. Registra acuerdos manuales; no procesa tarjetas ni inventa precio.
+
+## Asistentes
+
+- `POST /assistant/threads`
+- `POST /assistant/threads/{thread_id}/messages`
+- `GET /assistant/threads/{thread_id}/messages`
+- `POST /assistant/confirmations/{confirmation_id}`
+
+Actualmente funciona con proveedor determinista `simulated`. Las escrituras permitidas generan preview, hash, expiración y requieren confirmación explícita. No existe adaptador de modelo real aprobado.
+
+## Intervals.icu
+
+- `GET /athletes/{athlete_id}/connections/intervals`: consulta estado persistido o `not_connected`.
+- `POST /athletes/{athlete_id}/connections/intervals`: persiste modo simulado o `authorization_pending`.
+- `DELETE /athletes/{athlete_id}/connections/intervals`: revoca y elimina tokens persistidos.
+
+No hay todavía inicio/callback OAuth, webhook ni backfill. La documentación vigente del proveedor no publica refresh token; si un token deja de ser válido, NODO debe marcar la conexión caída y pedir reconexión. El modo real no debe ofrecerse como operativo.
+
+## Límites vigentes
+
+- correo Resend y recuperación implementados en código, pero no operativos hasta verificar dominio, secretos y envío real;
+- sin notificaciones Web Push;
+- IA real no integrada/configurada;
+- Intervals.icu real incompleto;
+- sin comparación completa prescrita vs. ejecutada en una pantalla;
+- infraestructura preparada en código, no desplegada.
+
+El inventario completo y sus estados están en [FUNCIONALIDADES_PRODUCTO.md](FUNCIONALIDADES_PRODUCTO.md).

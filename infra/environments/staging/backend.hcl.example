@@ -1,0 +1,3 @@
+# Crear este bucket de estado por un procedimiento bootstrap separado y aprobado.
+bucket = "REPLACE_WITH_TERRAFORM_STATE_BUCKET"
+prefix = "nodo/staging"

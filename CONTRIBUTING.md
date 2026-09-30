@@ -4,7 +4,7 @@
 
 `dev` es la rama de integración. Crear una rama corta desde `dev`, abrir un PR y fusionar sólo con los checks verdes. `main` queda reservada para versiones aprobadas para despliegue.
 
-El trabajo va por fases: [`docs/PLAN_EJECUCION.md`](docs/PLAN_EJECUCION.md) define F0 a F13 y cada una usa una rama `feat/fN-slug`. Una fase no empieza antes de que la anterior esté validada a mano. Si aparece trabajo que el plan no contempla, se anota en la sección "Desvíos" del plan y se decide en equipo antes de ampliar el alcance.
+El alcance completo está en [`docs/PLAN_MAESTRO_NODO.md`](docs/PLAN_MAESTRO_NODO.md); [`docs/PLAN_EJECUCION.md`](docs/PLAN_EJECUCION.md) organiza la ejecución técnica y los ADR posteriores fijan decisiones específicas. El trabajo puede avanzar en carriles independientes, pero ningún requisito se marca terminado sin integración, prueba y evidencia en la matriz. Si aparece trabajo no contemplado, se registra como desvío y se decide antes de ampliar alcance.
 
 Cada cambio debe incluir:
 
@@ -24,11 +24,13 @@ Los ganchos corren `ruff`, higiene básica de archivos y un bloqueo explícito d
 
 ## Definición de terminado
 
-- Backend: `python -m ruff check .`, `python -m pytest -q` y migraciones Alembic válidas, todo desde `backend/api`.
-- Frontend: `npm run typecheck` y `npm run build:lab`.
+- Backend: `python -m ruff check .`, `python -m ruff format --check .`, `python -m pytest -q` y migraciones Alembic válidas sobre PostgreSQL 16, todo desde `backend/api`.
+- Frontend: `npm run typecheck`, `npm run test:web`, `npm run build:web` y `npm run build:lab`.
+- Plataforma: `terraform fmt -check -recursive infra`, `terraform validate` en ambos entornos y `bash -n ops/*.sh`.
 - Repositorio: `pre-commit run --all-files` limpio.
 - Cambios de esquema: migración nueva, reversible cuando sea razonable y comprobada sobre una base limpia.
 - Rutas protegidas: casos de permiso propio, permiso denegado y conflicto concurrente cuando corresponda.
+- Release: SHA exacto → CI → digest escaneado → staging → promoción del mismo digest → migración → HTTPS/smoke. Tener un PR o Terraform válido no equivale a despliegue.
 
 ## Convenciones de producto
 

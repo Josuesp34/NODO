@@ -1,4 +1,5 @@
 """Ejecutar explícitamente: python -m app.create_tables (solo desarrollo)."""
+
 import asyncio
 
 from app.core.database import engine, init_db

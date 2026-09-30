@@ -17,9 +17,7 @@ def extract_session_metrics(df: pd.DataFrame, session: dict | None = None) -> di
     """Preferir resumen FIT; el intervalo entre registros es tiempo transcurrido."""
     session = session or {}
     timer = valid_number(session.get("total_timer_time"))
-    elapsed = 0.0 if df.empty else (
-        df["timestamp"].iloc[-1] - df["timestamp"].iloc[0]
-    ).total_seconds()
+    elapsed = 0.0 if df.empty else (df["timestamp"].iloc[-1] - df["timestamp"].iloc[0]).total_seconds()
     duration = timer if timer is not None else elapsed
     summary_hr = valid_number(session.get("avg_heart_rate"), minimum=1)
     hr = pd.to_numeric(df.get("heart_rate", pd.Series(dtype=float)), errors="coerce")

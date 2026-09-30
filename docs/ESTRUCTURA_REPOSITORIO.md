@@ -18,26 +18,29 @@ NODO/
 │       │   ├── api/
 │       │   ├── domain/
 │       │   └── services/
-│       ├── docker-compose.yml    # Servicios `api` y `timescaledb`, sólo para local
+│       ├── docker-compose.yml    # Servicios `api`, `worker` y `postgres`, sólo para local
 │       ├── ruff.toml             # Reglas de estilo del backend
 │       └── requirements*.txt
 ├── frontend/
 │   ├── apps/
-│   │   ├── nodo-lab/             # Módulo web de entrenador dentro de NODO
+│   │   ├── nodo-web/             # PWA activa: coach, atleta y BFF
+│   │   ├── nodo-lab/             # Referencia web anterior, compilada en CI
 │   │   └── nodo-mobile/          # Experiencia móvil NODO (congelada, ver ADR 0003)
 │   └── packages/
 │       └── api-client/           # Contrato REST y tipos compartidos
 ├── docs/
 │   ├── ADR/                      # Decisiones tomadas, numeradas y con estado
-│   ├── PLAN_EJECUCION.md         # Fases F0–F13, reglas y compuertas humanas
+│   ├── PLAN_EJECUCION.md         # Secuencia FA/FB y fases; PLAN_MAESTRO_NODO conserva F0–F16
 │   └── …                         # Producto, arquitectura y relevo técnico
-├── .github/workflows/            # Backend, frontend e higiene
+├── infra/                       # Terraform staging/prod para GCP
+├── ops/                         # Preflight, backup, restore, rollback y smoke
+├── .github/workflows/            # Backend, frontend, higiene, plataforma, seguridad y deploy
 ├── .pre-commit-config.yaml       # Ganchos de commit para todo el repositorio
 ├── AGENTS.md                     # Contexto para agentes de desarrollo
 └── README.md                     # Entrada para personas
 ```
 
-`NODO Lab` no es un producto independiente: es un módulo para entrenadores dentro de NODO. El ADR 0003 decidió que ambas experiencias vivan en una sola PWA, `frontend/apps/nodo-web`, a partir de la fase F2; mientras tanto la estructura de arriba es la vigente.
+`NODO Lab` no es un producto independiente: es un módulo para entrenadores dentro de NODO. Ambas experiencias viven en la PWA `frontend/apps/nodo-web`; las aplicaciones anteriores se conservan como referencias.
 
 ## Reglas de ubicación
 

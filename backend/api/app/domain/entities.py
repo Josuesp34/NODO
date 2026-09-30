@@ -6,14 +6,16 @@ from pydantic import BaseModel, ConfigDict
 class BaseEntity(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
+
 # Jerarquía
 class User(BaseEntity):
     id: int
     email: str
     first_name: str
     last_name: str
-    role: str # 'coach' or 'athlete'
+    role: str  # 'coach' or 'athlete'
     coach_id: int | None = None
+
 
 # Actividad e Ingesta
 class ActivitySummary(BaseEntity):
@@ -36,6 +38,7 @@ class ActivitySummary(BaseEntity):
     tsb: float | None = None
     acwr: float | None = None
 
+
 class TelemetryPoint(BaseEntity):
     timestamp: datetime
     heart_rate: int | None = None
@@ -45,7 +48,9 @@ class TelemetryPoint(BaseEntity):
     power: int | None = None
     temperature: int | None = None
 
+
 class ActivityData(BaseEntity):
     """Agregado que representa la actividad completa con su telemetría"""
+
     summary: ActivitySummary
     telemetry: list[TelemetryPoint]

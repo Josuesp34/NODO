@@ -43,3 +43,15 @@ repos:
         language: fail
         files: '(^|/)\.env(\.|$)|\.[fF][iI][tT]$|(^|/)node_modules/|(^|/)__pycache__/|(^|/)\.next/|\.log$'
         exclude: '(^|/)\.env\.example$'
+      - id: sin-estado-terraform-ni-llaves-cloud
+        name: Nada de estado/planes Terraform, tfvars privados o llaves cloud
+        entry: >-
+          Estado Terraform, planes, tfvars reales y llaves de cuentas de servicio
+          deben permanecer fuera de Git.
+        language: fail
+        files: '(^|/)terraform\.tfvars$|\.tfstate($|\.)|\.tfplan$|(^|/)\.terraform/|(^|/)(service-account|gcp|google)[^/]*(-key|-credentials)?\.json$'
+      - id: bash-syntax-ops
+        name: Sintaxis de runbooks Bash
+        entry: bash -n
+        language: system
+        files: ^ops/.*\.sh$

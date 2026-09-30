@@ -1,13 +1,14 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, PrimaryKeyConstraint, desc
+from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, PrimaryKeyConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.infrastructure.database.models.base import Base
 
 if TYPE_CHECKING:
     from app.infrastructure.database.models.activity import Activity
+
 
 class TelemetryRecord(Base):
     __tablename__ = "telemetry_records"
@@ -26,7 +27,8 @@ class TelemetryRecord(Base):
 
     __table_args__ = (
         PrimaryKeyConstraint("activity_id", "timestamp"),
-        Index("telemetry_records_timestamp_idx", desc("timestamp")),
+        Index("telemetry_records_timestamp_idx", "timestamp", postgresql_using="brin"),
+        {"postgresql_partition_by": "RANGE (timestamp)"},
     )
 
     activity: Mapped["Activity"] = relationship("Activity", back_populates="telemetry_records")

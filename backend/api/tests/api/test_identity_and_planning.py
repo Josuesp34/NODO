@@ -7,7 +7,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.infrastructure.database.models import Base
+from app.infrastructure.database.models import Base, User
 from app.main import get_application
 
 
@@ -52,39 +52,64 @@ def register_and_login(client, email="coach@nodo.com"):
 
 
 def create_athlete(client, headers, email="athlete@nodo.com"):
-    response = client.post("/api/v1/auth/athletes", headers=headers, json={
-        "email": email, "first_name": "Leo", "last_name": "Atleta", "timezone": "America/Mexico_City",
-    })
+    response = client.post(
+        "/api/v1/auth/athletes",
+        headers=headers,
+        json={
+            "email": email,
+            "first_name": "Leo",
+            "last_name": "Atleta",
+            "timezone": "America/Mexico_City",
+        },
+    )
     assert response.status_code == 201
     return response.json()
 
 
 def workout_payload(block_id=None):
     return {
-        "title": "Umbral", "scheduled_date": "2026-10-01T07:00:00-06:00", "sport_type": "running",
+        "title": "Umbral",
+        "scheduled_date": "2026-10-01T07:00:00-06:00",
+        "sport_type": "running",
         "block_id": block_id,
-        "steps": [{"repetitions": 1, "steps": [
-            {"kind": "warmup", "duration_sec": 900},
+        "steps": [
             {
-                "kind": "work",
-                "distance_m": 1000,
-                "target": {"metric": "pace", "unit": "sec_per_km", "minimum": 215, "maximum": 225},
-            },
-            {"kind": "cooldown", "duration_sec": 600},
-        ]}],
+                "repetitions": 1,
+                "steps": [
+                    {"kind": "warmup", "duration_sec": 900},
+                    {
+                        "kind": "work",
+                        "distance_m": 1000,
+                        "target": {"metric": "pace", "unit": "sec_per_km", "minimum": 215, "maximum": 225},
+                    },
+                    {"kind": "cooldown", "duration_sec": 600},
+                ],
+            }
+        ],
     }
 
 
 def test_coach_invites_athlete_activation_and_token_rotation(nodo_api):
     headers = register_and_login(nodo_api)
     invitation = create_athlete(nodo_api, headers)
-    activation = nodo_api.post("/api/v1/auth/athletes/activate", json={
-        "invitation_token": invitation["invitation_token"], "password": "A-second-long-password",
-    })
+    activation = nodo_api.post(
+        "/api/v1/auth/athletes/activate",
+        json={
+            "invitation_token": invitation["invitation_token"],
+            "password": "A-second-long-password",
+        },
+    )
     assert activation.status_code == 200
-    assert nodo_api.post("/api/v1/auth/athletes/activate", json={
-        "invitation_token": invitation["invitation_token"], "password": "A-second-long-password",
-    }).status_code == 400
+    assert (
+        nodo_api.post(
+            "/api/v1/auth/athletes/activate",
+            json={
+                "invitation_token": invitation["invitation_token"],
+                "password": "A-second-long-password",
+            },
+        ).status_code
+        == 400
+    )
     refreshed = nodo_api.post("/api/v1/auth/refresh", json={"refresh_token": activation.json()["refresh_token"]})
     assert refreshed.status_code == 200
     reused_refresh = {"refresh_token": activation.json()["refresh_token"]}
@@ -104,10 +129,13 @@ def test_coach_can_list_only_owned_athletes(nodo_api):
     other_headers = register_and_login(nodo_api, "other-coach@nodo.com")
     assert nodo_api.get("/api/v1/auth/athletes", headers=other_headers).json() == []
 
-    activation = nodo_api.post("/api/v1/auth/athletes/activate", json={
-        "invitation_token": create_athlete(nodo_api, owner_headers, "third@nodo.com")["invitation_token"],
-        "password": "A-third-long-password",
-    })
+    activation = nodo_api.post(
+        "/api/v1/auth/athletes/activate",
+        json={
+            "invitation_token": create_athlete(nodo_api, owner_headers, "third@nodo.com")["invitation_token"],
+            "password": "A-third-long-password",
+        },
+    )
     athlete_headers = {"Authorization": f"Bearer {activation.json()['access_token']}"}
     assert nodo_api.get("/api/v1/auth/athletes", headers=athlete_headers).status_code == 403
 
@@ -120,9 +148,15 @@ def test_planning_owner_can_publish_and_athlete_can_read(nodo_api):
     headers = register_and_login(nodo_api)
     invitation = create_athlete(nodo_api, headers)
     athlete = invitation["athlete"]
-    block = nodo_api.post(f"/api/v1/athletes/{athlete['id']}/blocks", headers=headers, json={
-        "title": "Base", "start_date": "2026-09-28", "end_date": "2026-10-25",
-    })
+    block = nodo_api.post(
+        f"/api/v1/athletes/{athlete['id']}/blocks",
+        headers=headers,
+        json={
+            "title": "Base",
+            "start_date": "2026-09-28",
+            "end_date": "2026-10-25",
+        },
+    )
     assert block.status_code == 201
     created = nodo_api.post(
         f"/api/v1/athletes/{athlete['id']}/workouts",
@@ -137,19 +171,27 @@ def test_planning_owner_can_publish_and_athlete_can_read(nodo_api):
     )
     assert published.status_code == 200
     assert published.json()["status"] == "published"
-    athlete_activation = nodo_api.post("/api/v1/auth/athletes/activate", json={
-        "invitation_token": invitation["invitation_token"], "password": "A-second-long-password",
-    })
+    athlete_activation = nodo_api.post(
+        "/api/v1/auth/athletes/activate",
+        json={
+            "invitation_token": invitation["invitation_token"],
+            "password": "A-second-long-password",
+        },
+    )
     athlete_headers = {"Authorization": f"Bearer {athlete_activation.json()['access_token']}"}
     own_calendar = nodo_api.get(
-        f"/api/v1/athletes/{athlete['id']}/workouts?start=2026-10-01&end=2026-10-02", headers=athlete_headers,
+        f"/api/v1/athletes/{athlete['id']}/workouts?start=2026-10-01&end=2026-10-02",
+        headers=athlete_headers,
     )
     assert own_calendar.status_code == 200
     assert own_calendar.json()[0]["status"] == "published"
-    athlete_tokens = nodo_api.post("/api/v1/auth/athletes/activate", json={
-        "invitation_token": create_athlete(nodo_api, headers, "unused@nodo.com")["invitation_token"],
-        "password": "A-third-long-password",
-    })
+    athlete_tokens = nodo_api.post(
+        "/api/v1/auth/athletes/activate",
+        json={
+            "invitation_token": create_athlete(nodo_api, headers, "unused@nodo.com")["invitation_token"],
+            "password": "A-third-long-password",
+        },
+    )
     # Un atleta diferente no puede ver el calendario de otra persona.
     other_headers = {"Authorization": f"Bearer {athlete_tokens.json()['access_token']}"}
     foreign_read = nodo_api.get(
@@ -157,6 +199,43 @@ def test_planning_owner_can_publish_and_athlete_can_read(nodo_api):
         headers=other_headers,
     )
     assert foreign_read.status_code == 404
+
+
+def test_athlete_cannot_see_drafts_and_publish_is_idempotent(nodo_api):
+    coach_headers = register_and_login(nodo_api)
+    invitation = create_athlete(nodo_api, coach_headers)
+    athlete = invitation["athlete"]
+    created = nodo_api.post(
+        f"/api/v1/athletes/{athlete['id']}/workouts",
+        headers=coach_headers,
+        json=workout_payload(),
+    )
+    activation = nodo_api.post(
+        "/api/v1/auth/athletes/activate",
+        json={
+            "invitation_token": invitation["invitation_token"],
+            "password": "A-second-long-password",
+        },
+    )
+    athlete_headers = {"Authorization": f"Bearer {activation.json()['access_token']}"}
+    calendar_url = f"/api/v1/athletes/{athlete['id']}/workouts?start=2026-10-01&end=2026-10-02"
+    assert nodo_api.get(calendar_url, headers=athlete_headers).json() == []
+
+    publish_url = f"/api/v1/athletes/{athlete['id']}/workouts/{created.json()['id']}/publish"
+    first = nodo_api.post(publish_url, headers=coach_headers, json={"expected_version": 1})
+    repeated = nodo_api.post(publish_url, headers=coach_headers, json={"expected_version": 1})
+    assert first.status_code == repeated.status_code == 200
+    assert first.json()["version"] == repeated.json()["version"] == 2
+    assert len(nodo_api.get(calendar_url, headers=athlete_headers).json()) == 1
+
+
+def test_identity_exposes_persisted_capabilities(nodo_api):
+    headers = register_and_login(nodo_api)
+    identity = nodo_api.get("/api/v1/auth/me", headers=headers)
+    assert identity.status_code == 200
+    assert identity.json()["roles"] == ["coach"]
+    assert "coach:calendar" in identity.json()["capabilities"]
+    assert len(identity.json()["organization_ids"]) == 1
 
 
 def test_coach_cannot_access_other_coach_athlete_or_overwrite_stale_version(nodo_api):
@@ -185,9 +264,15 @@ def test_invalid_workout_contract_is_rejected_before_write(nodo_api):
 def test_workout_must_fit_inside_selected_block(nodo_api):
     headers = register_and_login(nodo_api)
     athlete = create_athlete(nodo_api, headers)["athlete"]
-    block = nodo_api.post(f"/api/v1/athletes/{athlete['id']}/blocks", headers=headers, json={
-        "title": "Base", "start_date": "2026-09-28", "end_date": "2026-10-25",
-    })
+    block = nodo_api.post(
+        f"/api/v1/athletes/{athlete['id']}/blocks",
+        headers=headers,
+        json={
+            "title": "Base",
+            "start_date": "2026-09-28",
+            "end_date": "2026-10-25",
+        },
+    )
     assert block.status_code == 201
     invalid = workout_payload(block.json()["id"])
     invalid["scheduled_date"] = "2026-11-01T07:00:00-06:00"
@@ -202,7 +287,8 @@ def test_development_superuser_bootstrap_requires_explicit_secret(nodo_api, monk
     monkeypatch.setattr(settings, "ALLOW_SUPERUSER_BOOTSTRAP", True)
     monkeypatch.setattr(settings, "DEV_SUPERUSER_BOOTSTRAP_TOKEN", "local-bootstrap-key")
     created = nodo_api.post(
-        "/api/v1/auth/superusers", json=payload,
+        "/api/v1/auth/superusers",
+        json=payload,
         headers={"X-NODO-Development-Key": "local-bootstrap-key"},
     )
     assert created.status_code == 201
@@ -213,3 +299,8 @@ def test_development_superuser_bootstrap_requires_explicit_secret(nodo_api, monk
     me = nodo_api.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {tokens.json()['access_token']}"})
     assert me.status_code == 200
     assert me.json()["is_superuser"] is True
+
+
+def test_user_lifecycle_timestamps_are_timezone_aware():
+    assert User.__table__.c.email_verified_at.type.timezone is True
+    assert User.__table__.c.deleted_at.type.timezone is True

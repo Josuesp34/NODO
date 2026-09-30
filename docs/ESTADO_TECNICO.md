@@ -62,3 +62,47 @@ La preparación para piloto tiene condiciones explícitas en `docs/PILOT_READINE
 Las pruebas cubren cálculos, datos faltantes, muestreo irregular, FIT sintético con SDK real, rechazos HTTP, registro ORM, rollback, autenticación y planeación. En la validación actual, las 39 pruebas pasaron, `alembic check` no detectó deriva de esquema, se levantó TimescaleDB local, se aplicaron las migraciones y `GET /health` respondió 200 contra PostgreSQL real. También se comprobó CORS para NODO en `http://localhost:3000`.
 
 Docker Desktop en Windows requiere preparar el volumen de la imagen HA con UID 1000; `timescaledb-init` lo hace automáticamente. La base local usa el puerto `5433`, porque `5432` estaba ocupado. API y base se validaron en contenedores locales; esta configuración sigue siendo sólo de desarrollo.
+
+## Actualización de construcción integral · 20 de septiembre de 2026
+
+La precedencia vigente es `PLAN_MAESTRO_NODO.md` + `PLAN_EJECUCION.md` v2 + ADR 0007/0008. Por tanto, las referencias históricas de este documento a TimescaleDB o dos aplicaciones ya no describen el objetivo: producción usa PostgreSQL 16 particionado en Cloud SQL y una PWA única.
+
+### Plataforma cerrada en código
+
+- módulo Terraform reusable y raíces separadas de `staging`/`prod` para red, Cloud SQL privado, Storage, Artifact Registry, Secret Manager, IAM/WIF, API, PWA, migration job y worker pool opcional;
+- budgets y alertas parametrizados pero desactivados hasta confirmar importes/canales;
+- workflows con acciones fijadas por SHA para backend, migraciones PostgreSQL, frontend, contenedores, Terraform, CodeQL, OSV, Trivy, dependency review, staging y promoción a producción por digest;
+- scripts y runbooks para preflight, backup, restore PITR a una instancia nueva, rollback de revisión y smoke;
+- contratos de seguridad, costos, diseño, LLM, recuperación y lanzamiento, más matriz de trazabilidad.
+
+Verificación local: `terraform fmt` y `terraform validate` pasaron para ambos entornos con Terraform 1.13.3 y providers Google 7.46.1; Bash y YAML pasaron parseo. No se ejecutó `terraform plan` ni `apply`, no se usaron credenciales y no existe evidencia de recursos o URL pública.
+
+### Bloqueos reales para despliegue
+
+1. Los Dockerfiles y assets de migración requeridos ya están presentes y el preflight de release pasa; falta completar los builds/scans de ambos contenedores en CI. Un build local de API se inició pero fue cancelado por límite de tiempo, no por un error del código.
+2. Faltan selección/verificación humana de proyectos, región, billing/créditos, costo, dominio, correo, OAuth, proveedor IA y permisos.
+3. Faltan branch protection, GitHub Environments con reviewers/variables y primera conexión WIF.
+4. No se han ejecutado plan/apply, restore drill, dispositivos físicos, integraciones reales, E2E público, pentest ni GO comercial/legal.
+
+Estado global honesto de esa pasada: **PARCIAL — construcción activa; no publicado ni vendible todavía**. La plataforma estaba preparada para revisión y plan, no equivalía a producción.
+
+## Cierre funcional local · 20 de septiembre de 2026
+
+La construcción posterior cerró el piloto acompañando el producto con una sola PWA y API multirol. El recorrido local completo quedó comprobado sobre PostgreSQL 16 real: alta de coach, invitación, activación de atleta, creación de sesión, publicación idempotente y lectura de la sesión publicada en “Hoy”. Durante este E2E se corrigieron dos defectos que la suite aislada no había detectado: normalización de capacidades granulares en la PWA y columnas de ciclo de vida con zona horaria en PostgreSQL.
+
+Evidencia local actual:
+
+- backend: `47 passed`, `ruff check` y pre-commit verdes;
+- PostgreSQL 16: migraciones `upgrade → downgrade base → upgrade head`, tabla de telemetría particionada y recorrido E2E real;
+- frontend: typecheck de todos los workspaces, `9/9` pruebas PWA y build Next de 34 rutas;
+- imágenes API/PWA construidas; PWA standalone comprobada en `PORT=8080` con usuario no root;
+- Terraform staging/prod validado, workflows YAML y runbooks Bash verificados;
+- QA visual de landing, acceso, panel coach y sesión del atleta con la dirección dark/lima/coral de `DESIGN_SYSTEM.md`.
+
+Estado global actual: **piloto funcional y vendible de forma acompañada en código; NO publicado y NO-GO de producción**. La carga FIT es funcional y cuenta con guía pública; la IA y la conexión de Intervals.icu siguen siendo simuladas, no integraciones reales. Persisten compuertas externas: credenciales y billing GCP, WIF/entornos GitHub, dominio/correo, OAuth real de Intervals.icu, proveedor IA real, preferencias push, CI remoto, plan/apply, restore drill, dispositivos, pentest y aprobación legal/comercial.
+
+## Correo y decisiones de proveedor · 23 de septiembre de 2026
+
+Se añadió el adaptador Resend con cola persistente e idempotencia, cuerpo/destinatario cifrados en reposo, borrado del payload tras éxito, invitaciones sin código visible en producción y recuperación de contraseña de un solo uso con revocación de sesiones. La PWA ofrece el formulario de recuperación. Pruebas locales cubren aceptación, cifrado, despacho simulado, respuesta genérica y revocación; **ningún email real fue enviado**. Sin dominio y cuenta verificada, estos flujos no son operativos en producción. Migraciones 0001→0005, `alembic check`, downgrade base y upgrade head quedaron verdes en un PostgreSQL 16 local y aislado; Cloud SQL continúa pendiente.
+
+Las comparaciones actuales de datos deportivos e IA están en [DECISION_PROVEEDORES.md](DECISION_PROVEEDORES.md). La decisión deportiva aceptada es **Intervals.icu principal y FIT como respaldo permanente**; la elección final de IA sigue pendiente. Intervals.icu y los asistentes continúan en simulación; no se ha abierto acceso a un proveedor real.

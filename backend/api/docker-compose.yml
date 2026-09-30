@@ -14,13 +14,35 @@ services:
       ALLOW_COACH_REGISTRATION: ${ALLOW_COACH_REGISTRATION:-false}
       ALLOW_SUPERUSER_BOOTSTRAP: ${ALLOW_SUPERUSER_BOOTSTRAP:-false}
       DEV_SUPERUSER_BOOTSTRAP_TOKEN: ${DEV_SUPERUSER_BOOTSTRAP_TOKEN:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-}
+      EMAIL_QUEUE_KEY: ${EMAIL_QUEUE_KEY:-}
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost:3000}
     depends_on:
-      timescaledb:
+      postgres:
         condition: service_healthy
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
-  timescaledb:
-    image: timescale/timescaledb-ha@sha256:a8e3322e1cf936828698cb4de2a9c4b59acae1b123909f023bb15f42270af95d
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./app:/app/app
+    environment:
+      ENVIRONMENT: development
+      DATABASE_URL: ${DOCKER_DATABASE_URL:?Configurar DOCKER_DATABASE_URL en .env}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-}
+      EMAIL_QUEUE_KEY: ${EMAIL_QUEUE_KEY:-}
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost:3000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: python -m app.services.jobs
+
+  postgres:
+    image: postgres:16-alpine
     environment:
       POSTGRES_DB: ${POSTGRES_DB:?Configurar POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER:?Configurar POSTGRES_USER}
@@ -29,24 +51,11 @@ services:
     ports:
       - "127.0.0.1:${POSTGRES_HOST_PORT:-5433}:5432"
     volumes:
-      - timescaledb_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U \"${POSTGRES_USER}\" -d \"${POSTGRES_DB}\""]
       interval: 5s
       timeout: 5s
       retries: 10
-    depends_on:
-      timescaledb-init:
-        condition: service_completed_successfully
-
-  # La imagen HA usa el UID 1000. Docker Desktop crea los volúmenes con otro
-  # propietario, por lo que se prepara una sola vez antes de iniciar Postgres.
-  timescaledb-init:
-    image: alpine:3.21
-    volumes:
-      - timescaledb_data:/data
-    command: ["sh", "-c", "chown -R 1000:1000 /data && chmod -R 700 /data"]
-    restart: "no"
-
 volumes:
-  timescaledb_data:
+  postgres_data:

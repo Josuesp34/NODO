@@ -1,3 +1,9 @@
+# Pendientes históricos del MVP · 14-09-2026
+
+La lista siguiente es un registro histórico. Los flujos de publicación al atleta, edición de borradores, FIT con dueño, cola, molestias y recuperación avanzaron posteriormente. Los pendientes vigentes y sus responsables propuestos están en [HANDOVER_JOSUE.md](HANDOVER_JOSUE.md); estados verificables en [FUNCIONALIDADES_PRODUCTO.md](FUNCIONALIDADES_PRODUCTO.md) y [MATRIZ_REQUISITOS.md](MATRIZ_REQUISITOS.md).
+
+---
+
 # Pendientes del MVP de NODO
 
 Actualizado: 14 de septiembre de 2026.

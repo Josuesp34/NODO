@@ -1,4 +1,5 @@
 """Cálculos deterministas; no representan diagnósticos ni predicción de lesiones."""
+
 import math
 
 
@@ -43,9 +44,7 @@ def calculate_ewma(today_load: float, yesterday_ewma: float, time_constant: int)
     return yesterday_ewma + (today_load - yesterday_ewma) / time_constant
 
 
-def calculate_training_status(
-    today_load: float, yesterday_ctl: float, yesterday_atl: float
-) -> dict[str, float]:
+def calculate_training_status(today_load: float, yesterday_ctl: float, yesterday_atl: float) -> dict[str, float]:
     """Una actualización por día local, sumando sesiones e incluyendo descansos.
 
     Convención: CTL/ATL al cierre del día, TSB al inicio. No calcula ACWR:

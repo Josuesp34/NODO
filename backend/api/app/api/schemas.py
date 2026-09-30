@@ -50,6 +50,9 @@ class UserView(Identity):
     role: str
     coach_id: int | None
     is_superuser: bool
+    roles: list[str] = Field(default_factory=list)
+    capabilities: list[str] = Field(default_factory=list)
+    organization_ids: list[int] = Field(default_factory=list)
 
 
 class Login(Contract):
@@ -75,8 +78,18 @@ class TokenPair(Contract):
 
 class AthleteCreated(Contract):
     athlete: UserView
-    invitation_token: str
+    invitation_token: str | None = None
     invitation_expires_at: datetime
+
+
+class PasswordResetRequest(Contract):
+    email: EmailStr
+
+
+class PasswordResetConfirm(Contract):
+    email: EmailStr
+    reset_token: Token
+    password: Password
 
 
 class BlockCreate(Contract):
@@ -105,8 +118,7 @@ class StepTarget(Contract):
 
     @model_validator(mode="after")
     def valid_target(self):
-        units = {"pace": {"sec_per_km", "sec_per_100m"}, "power": {"watts"},
-                 "heart_rate": {"bpm"}, "rpe": {"rpe_0_10"}}
+        units = {"pace": {"sec_per_km", "sec_per_100m"}, "power": {"watts"}, "heart_rate": {"bpm"}, "rpe": {"rpe_0_10"}}
         if self.unit not in units[self.metric] or self.minimum > self.maximum:
             raise ValueError("Objetivo o unidad incompatible")
         if self.metric == "rpe" and self.maximum > 10:
@@ -136,7 +148,7 @@ class WorkoutCreate(Contract):
     title: Annotated[str, Field(min_length=1, max_length=255)]
     description: str | None = Field(default=None, max_length=4000)
     scheduled_date: AwareDatetime
-    sport_type: Literal["running", "cycling", "swimming"]
+    sport_type: Literal["running", "cycling", "swimming", "triathlon"]
     block_id: int | None = Field(default=None, gt=0)
     steps: list[StepGroup] = Field(min_length=1, max_length=50)
 

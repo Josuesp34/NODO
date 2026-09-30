@@ -5,6 +5,35 @@ export type TokenPair = {
 };
 
 type BackendFetch = (path: string, init?: RequestInit) => Promise<Response>;
+const rotations = new WeakMap<BackendFetch, Map<string, Promise<TokenPair | null>>>();
+
+async function rotateOnce(refresh: string, backendFetch: BackendFetch): Promise<TokenPair | null> {
+  let entries = rotations.get(backendFetch);
+  if (!entries) { entries = new Map(); rotations.set(backendFetch, entries); }
+  const existing = entries.get(refresh);
+  if (existing) return existing;
+  const pending = (async () => {
+    const response = await backendFetch("auth/refresh", {
+      method: "POST",
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: refresh }),
+      signal: AbortSignal.timeout(15_000),
+    });
+    return response.ok ? await response.json() as TokenPair : null;
+  })();
+  if (entries.size >= 256) {
+    const oldest = entries.keys().next().value;
+    if (oldest) entries.delete(oldest);
+  }
+  entries.set(refresh, pending);
+  // Concurrent old access requests can return 401 after the first refresh ends.
+  // Keep its result briefly; credentials stay only in this server process.
+  void pending.finally(() => {
+    const timer = setTimeout(() => { if (entries.get(refresh) === pending) entries.delete(refresh); }, 5_000);
+    timer.unref?.();
+  }).catch(() => undefined);
+  return pending;
+}
 
 // Cloud Run IAM authenticates the service; Authorization remains the NODO user session.
 export function createBackendFetch(apiUrl: string, audience = "", fetcher: typeof fetch = fetch): BackendFetch {
@@ -70,12 +99,7 @@ export async function fetchWithRotatingSession(
   }
   const unauthorized = () => ({ response: Response.json({ detail: "La sesión expiró." }, { status: 401 }) });
   if (!session.refresh) return unauthorized();
-  const refreshResponse = await backendFetch("auth/refresh", {
-    method: "POST",
-    headers: { Accept: "application/json", "Content-Type": "application/json" },
-    body: JSON.stringify({ refresh_token: session.refresh }),
-  });
-  if (!refreshResponse.ok) return unauthorized();
-  const rotated = (await refreshResponse.json()) as TokenPair;
+  const rotated = await rotateOnce(session.refresh, backendFetch);
+  if (!rotated) return unauthorized();
   return { response: await authorized(rotated.access_token), rotated };
 }

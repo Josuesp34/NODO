@@ -14,15 +14,43 @@ set -Eeuo pipefail
   exit 1
 }
 command -v gcloud >/dev/null || { printf 'ERROR: gcloud no está instalado.\n' >&2; exit 1; }
+command -v python3 >/dev/null || { printf 'ERROR: python3 no está instalado.\n' >&2; exit 1; }
+[[ "$TARGET_INSTANCE" =~ ^[a-z]([a-z0-9-]{0,96}[a-z0-9])?$ ]] || { printf 'ERROR: nombre destino inválido.\n' >&2; exit 1; }
+python3 - <<'PY'
+import os
+from datetime import datetime
+try:
+    datetime.fromisoformat(os.environ['POINT_IN_TIME'].replace('Z', '+00:00'))
+except ValueError:
+    raise SystemExit('ERROR: POINT_IN_TIME no representa una fecha válida.') from None
+PY
 
 gcloud sql instances describe "$SOURCE_INSTANCE" --project "$GCP_PROJECT_ID" \
   --format='table(name,region,databaseVersion,state)'
-if gcloud sql instances describe "$TARGET_INSTANCE" --project "$GCP_PROJECT_ID" >/dev/null 2>&1; then
+# A permission/network error must never be interpreted as target-not-found.
+target_exists="$(gcloud sql instances list --project "$GCP_PROJECT_ID" --filter="name=$TARGET_INSTANCE" --format='value(name)')"
+if [[ -n "$target_exists" ]]; then
   printf 'ERROR: TARGET_INSTANCE ya existe; no se sobrescribe.\n' >&2
   exit 1
 fi
 
-gcloud sql instances clone "$SOURCE_INSTANCE" "$TARGET_INSTANCE" \
-  --point-in-time "$POINT_IN_TIME" --project "$GCP_PROJECT_ID" --async
+export RECOVERY_CLONE_START_SECONDS
+RECOVERY_CLONE_START_SECONDS="$(date +%s)"
+operation="$(gcloud sql instances clone "$SOURCE_INSTANCE" "$TARGET_INSTANCE" \
+  --point-in-time "$POINT_IN_TIME" --project "$GCP_PROJECT_ID" --async --format='value(name)')"
+[[ -n "$operation" ]] || { printf 'ERROR: no se obtuvo operación PITR.\n' >&2; exit 1; }
+gcloud sql operations wait "$operation" --project "$GCP_PROJECT_ID" --timeout=1800 >/dev/null
+state="$(gcloud sql instances describe "$TARGET_INSTANCE" --project "$GCP_PROJECT_ID" --format='value(state)')"
+[[ "$state" == "RUNNABLE" ]] || { printf 'ERROR: clon PITR aún no está RUNNABLE.\n' >&2; exit 1; }
+export RECOVERY_CLONE_END_SECONDS
+RECOVERY_CLONE_END_SECONDS="$(date +%s)"
+python3 - <<'PY'
+import json, os
+print(json.dumps({
+    'event': 'pitr_clone_verified', 'clone_ready': True,
+    'provision_seconds': int(os.environ['RECOVERY_CLONE_END_SECONDS']) - int(os.environ['RECOVERY_CLONE_START_SECONDS']),
+    'application_restored': False, 'rto_measured': False,
+}))
+PY
 
-printf 'Clon PITR solicitado. Validar datos y controles de acceso antes de cualquier cambio de tráfico.\n'
+printf 'PITR completó el clon; faltan validar datos, reejecutar borrados y medir recuperación funcional antes de tráfico.\n'

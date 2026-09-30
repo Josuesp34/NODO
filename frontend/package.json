@@ -1,16 +1,24 @@
 {
   "name": "nodo-frontend",
   "private": true,
-  "workspaces": ["apps/nodo-web", "apps/nodo-lab", "packages/*"],
+  "workspaces": [
+    "apps/nodo-web",
+    "apps/nodo-lab",
+    "packages/*"
+  ],
   "scripts": {
     "dev:web": "npm run dev --workspace=@nodo/web",
     "dev:lab": "npm run dev --workspace=@nodo/lab",
     "build:web": "npm run build --workspace=@nodo/web",
     "build:lab": "npm run build --workspace=@nodo/lab",
     "test:web": "npm run test --workspace=@nodo/web",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test:e2e": "playwright test"
   },
   "engines": {
     "node": ">=22"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
   }
 }

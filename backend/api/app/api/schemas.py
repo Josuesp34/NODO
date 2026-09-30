@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from typing import Annotated, Literal
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -152,8 +152,15 @@ class WorkoutCreate(Contract):
     block_id: int | None = Field(default=None, gt=0)
     steps: list[StepGroup] = Field(min_length=1, max_length=50)
 
+    @field_validator("scheduled_date")
+    @classmethod
+    def schedule_in_utc(cls, value):
+        return (value.replace(tzinfo=UTC) if value.tzinfo is None else value).astimezone(UTC)
+
     @model_validator(mode="after")
     def valid_sport_targets(self):
+        if sum(group.repetitions * len(group.steps) for group in self.steps) > 2000:
+            raise ValueError("La sesión excede 2000 pasos expandidos")
         for group in self.steps:
             for step in group.steps:
                 if not step.target:

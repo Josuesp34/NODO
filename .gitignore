@@ -9,9 +9,13 @@ htmlcov/
 .env.*
 !.env.example
 .vscode/
-node_modules/
+node_modules
 .next/
 dist/
 tmp/
+.local/
 *.fit
 *.FIT
+.local/
+playwright-report/
+test-results/

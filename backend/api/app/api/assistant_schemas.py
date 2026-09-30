@@ -21,6 +21,7 @@ class ProposedWrite(Contract):
 class MessageCreate(Contract):
     content: str = Field(min_length=1, max_length=8000)
     proposed_write: ProposedWrite | None = None
+    request_key: str | None = Field(default=None, min_length=8, max_length=80, pattern=r"^[A-Za-z0-9_-]+$")
 
 
 class ConfirmWrite(Contract):

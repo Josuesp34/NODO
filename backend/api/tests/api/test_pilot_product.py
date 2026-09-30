@@ -11,7 +11,7 @@ from sqlalchemy.pool import StaticPool
 from app.core.config import settings
 from app.core.database import get_db
 from app.infrastructure.database.models import Base, PrescribedWorkout
-from app.infrastructure.database.models.product import Decision, Recommendation, UserRoleAssignment
+from app.infrastructure.database.models.product import Decision, Job, Recommendation, ReviewItem, UserRoleAssignment
 from app.main import get_application
 from app.services.assistant import REDACTED_MESSAGE
 
@@ -31,6 +31,7 @@ def pilot_api(monkeypatch):
 
     asyncio.run(setup())
     app = get_application()
+    app.state.test_sessions = sessions
 
     async def override():
         async with sessions() as session:
@@ -263,6 +264,16 @@ def test_assistant_requires_confirmation_and_double_confirm_is_idempotent(pilot_
     assert confirmed.json() == repeated.json()
     assert len(pilot_api.get(f"/api/v1/athletes/{athlete['id']}/complaints", headers=athlete_headers).json()) == 1
 
+    async def stored_notice():
+        async with pilot_api.app.state.test_sessions() as db:
+            jobs = (await db.scalars(select(Job).where(Job.kind == "product_notification"))).all()
+            reviews = (await db.scalars(select(ReviewItem))).all()
+            assert len(jobs) == len(reviews) == 1
+            assert jobs[0].payload["entity"] == "complaint"
+            assert jobs[0].payload["entity_id"] == confirmed.json()["id"]
+
+    asyncio.run(stored_notice())
+
 
 def test_recommendation_uses_compare_and_swap_and_only_edits_drafts(pilot_api):
     coach_headers = register_and_login(pilot_api)
@@ -360,34 +371,14 @@ def test_groups_templates_and_intervals_gate(pilot_api):
     )
     assert len(first.json()["workout_ids"]) == 1
     assert repeated.json()["workout_ids"] == []
-    initial_connection = pilot_api.get(
-        f"/api/v1/athletes/{athlete['id']}/connections/intervals",
-        headers=athlete_headers,
-    )
-    assert initial_connection.status_code == 200
-    assert initial_connection.json()["status"] == "not_connected"
-    assert (
-        pilot_api.post(
-            f"/api/v1/athletes/{athlete['id']}/connections/intervals",
-            headers=athlete_headers,
-            json={"mode": "simulated"},
-        ).status_code
-        == 200
-    )
-    persisted_connection = pilot_api.get(
-        f"/api/v1/athletes/{athlete['id']}/connections/intervals",
-        headers=athlete_headers,
-    )
-    assert persisted_connection.status_code == 200
-    assert persisted_connection.json()["status"] == "simulated"
-    assert (
-        pilot_api.post(
-            f"/api/v1/athletes/{athlete['id']}/connections/intervals",
-            headers=athlete_headers,
-            json={"mode": "real"},
-        ).status_code
-        == 503
-    )
+    legacy_url = f"/api/v1/athletes/{athlete['id']}/connections/intervals"
+    initial = pilot_api.get(legacy_url, headers=athlete_headers)
+    assert initial.status_code == 200
+    assert initial.json()["status"] == "not_connected"
+    for mode in ("simulated", "real"):
+        assert pilot_api.post(legacy_url, headers=athlete_headers, json={"mode": mode}).status_code == 410
+    assert pilot_api.delete(legacy_url, headers=athlete_headers).status_code == 410
+    assert pilot_api.get(legacy_url, headers=athlete_headers).json()["status"] == "not_connected"
 
 
 def test_commercial_capacity_without_invented_price(pilot_api):

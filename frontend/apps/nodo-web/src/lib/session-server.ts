@@ -7,7 +7,10 @@ const apiUrl = (process.env.NODO_API_URL ?? "http://127.0.0.1:8000/api/v1").repl
 const cookieBase = process.env.SESSION_COOKIE_NAME ?? "nodo_session";
 const accessCookie = `${cookieBase}_access`;
 const refreshCookie = `${cookieBase}_refresh`;
-const secure = process.env.SESSION_COOKIE_SECURE === "true" || process.env.NODE_ENV === "production";
+// La excepción HTTP requiere una demo explícita y un origen exclusivamente loopback.
+const localDemo = process.env.NODO_LOCAL_DEMO === "true"
+  && /^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(process.env.NODO_APP_ORIGIN ?? "");
+const secure = process.env.SESSION_COOKIE_SECURE === "true" || (process.env.NODE_ENV === "production" && !localDemo);
 
 const cookieOptions = {
   httpOnly: true,
@@ -66,7 +69,9 @@ async function forwardAuthenticated(path: string, init: RequestInit) {
   }, backendFetch);
   const forwarded = await passThrough(response);
   if (rotated) setSession(forwarded, rotated);
-  if (response.status === 401) clearSession(forwarded);
+  // A request made before a new login can finish later. Deleting cookies on
+  // that old 401 would erase the new session. Explicit logout clears cookies;
+  // expired credentials remain unauthorized until login replaces them.
   return forwarded;
 }
 
@@ -85,10 +90,13 @@ export async function logoutSession() {
 }
 
 export async function passThrough(response: Response) {
-  const payload = response.status === 204 ? null : await response.arrayBuffer();
+  const streaming = response.headers.get("content-type")?.startsWith("text/event-stream");
+  const payload = response.status === 204 ? null : streaming ? response.body : await response.arrayBuffer();
   const forwarded = new NextResponse(payload, { status: response.status });
-  const contentType = response.headers.get("content-type");
-  if (contentType) forwarded.headers.set("Content-Type", contentType);
+  for (const name of ["Content-Type", "Content-Disposition", "X-Content-Type-Options"]) {
+    const value = response.headers.get(name);
+    if (value) forwarded.headers.set(name, value);
+  }
   forwarded.headers.set("Cache-Control", "no-store");
   return forwarded;
 }

@@ -95,3 +95,27 @@ test("403 no provoca renovación ni repetición de una escritura", async () => {
   assert.equal(result.response.status, 403);
   assert.equal(calls, 1);
 });
+
+test("solicitudes simultáneas con access viejo comparten una rotación, incluso tras resolverla", async () => {
+  let finishRefresh;
+  const refreshed = new Promise((resolve) => { finishRefresh = resolve; });
+  let calls = 0;
+  const backend = async (path, init) => {
+    if (path === "auth/refresh") {
+      calls += 1;
+      finishRefresh();
+      return Response.json(pair);
+    }
+    if (init.headers.get("Authorization") === "Bearer old-access") {
+      if (path === "second") await refreshed;
+      return new Response(null, { status: 401 });
+    }
+    return Response.json({ path });
+  };
+  const results = await Promise.all(["first", "second"].map((path) => fetchWithRotatingSession(
+    path, { method: "GET" }, { access: "old-access", refresh: "one-use-refresh" }, backend,
+  )));
+  assert.equal(calls, 1);
+  assert.deepEqual(results.map((result) => result.rotated), [pair, pair]);
+  assert.deepEqual(await Promise.all(results.map((result) => result.response.json())), [{ path: "first" }, { path: "second" }]);
+});

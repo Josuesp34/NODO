@@ -13,7 +13,25 @@ alembic==1.13.3
 argon2-cffi==23.1.0
 email-validator==2.2.0
 httpx==0.27.2
+google-auth[requests]==2.59.0
+pywebpush==2.5.0
 # Shared networking dependencies pinned to the reviewed production resolution.
 anyio==4.15.1
 idna==3.20
 cryptography==50.0.1
+# Provider networking and Web Push resolution exercised by contract tests.
+requests==2.34.2
+urllib3==2.8.0
+charset-normalizer==3.5.2
+pyasn1==0.6.4
+pyasn1-modules==0.4.2
+py-vapid==1.9.4
+http-ece==1.2.1
+aiohttp==3.14.3
+aiohappyeyeballs==2.7.1
+aiosignal==1.4.0
+attrs==26.1.0
+frozenlist==1.8.0
+multidict==6.9.1
+propcache==0.5.4
+yarl==1.25.1

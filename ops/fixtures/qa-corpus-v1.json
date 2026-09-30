@@ -1,0 +1,33 @@
+{
+  "version": "qa-corpus-v1",
+  "athletes": 70,
+  "weeks": 12,
+  "start_date": "2026-07-06",
+  "sports": [
+    "running",
+    "cycling",
+    "swimming",
+    "triathlon"
+  ],
+  "timezones": [
+    "America/Mexico_City",
+    "Europe/Madrid",
+    "Pacific/Auckland",
+    "America/New_York"
+  ],
+  "available_weekdays": [
+    0,
+    2,
+    4,
+    5
+  ],
+  "missing_every": 13,
+  "late_every": 17,
+  "partial_every": 19,
+  "multi_role_every": 10,
+  "limits_seconds": {
+    "calendar_p95": 1.5,
+    "activities_p95": 1.0
+  },
+  "ambiguous_every": 17
+}

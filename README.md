@@ -11,7 +11,7 @@ Plataforma para que entrenadores planifiquen, publiquen y revisen el entrenamien
 - [Configuración de Resend](docs/RESEND_CONFIGURACION.md) y [comparación de proveedores](docs/DECISION_PROVEEDORES.md).
 - [Decisiones de arquitectura (ADR)](docs/ADR/): identidad multirol, pipeline de ingesta, PWA única, sesión BFF, conector intervals.icu y cola sobre Postgres.
 - [Visión, alcance, objetivos y plan de ocho semanas](docs/PLAN_PRODUCTO.md).
-- [Arquitectura y contratos propuestos](docs/ARQUITECTURA.md).
+- [Arquitectura y contratos vigentes](docs/ARQUITECTURA.md).
 - [Contratos de la API base](docs/API_NODO.md).
 - [Guía de arranque de la PWA](docs/FRONTEND.md).
 - [Relevo histórico de frontend para Antigravity](docs/ANTIGRAVITY_FRONTEND_HANDOFF.md).
@@ -22,11 +22,21 @@ Plataforma para que entrenadores planifiquen, publiquen y revisen el entrenamien
 - [Pendientes del MVP, ruta crítica y criterios de prueba](docs/PENDIENTES_MVP.md).
 - [Plataforma GCP](infra/README.md), [operación](docs/OPERACION_GCP.md), [seguridad](docs/SEGURIDAD.md), [costos](docs/COSTOS.md) y [lanzamiento](docs/LANZAMIENTO.md).
 
-**Estado actual: piloto funcional local; producción pendiente de configuración y verificación.** El recorrido local coach → invitación → activación → planificación → publicación → atleta está verificado sobre PostgreSQL 16 real. FIT manual es funcional. IA e Intervals.icu reales no están configurados ni completos: sólo existen sus modos simulados y contratos seguros. La versión candidata y la evidencia de publicación de código están en [GitHub Release](https://github.com/Josuesp34/NODO/releases/tag/v0.4.0-rc.1); un tag no demuestra producción. Falta verificar GCP/billing, plan/apply, URL HTTPS, correo/dominio, integraciones reales y los criterios de `LANZAMIENTO.md`. Consultar `FUNCIONALIDADES_PRODUCTO.md` antes de ofrecer una capacidad.
+**Entrega de código: `v0.5.0-rc.1`, con demo y CI verificados.** Producto manual, ambos chats, adaptadores Intervals/Vertex, privacidad, Push y operación están implementados; la demo usa datos sintéticos y proveedores simulados explícitos. La evidencia final de pruebas, PRs y versión se registra en [VALIDACION_HANDOVER](docs/VALIDACION_HANDOVER.md). Las integraciones con cuentas reales requieren activación y comprobación separadas.
 
 ## Entrega con Josué
 
-El [plan de handover](docs/HANDOVER_JOSUE.md) reúne el arranque, demo, cambios, pendientes y responsables propuestos. El [mensaje de WhatsApp](docs/MENSAJE_WHATSAPP_JOSUE.md) es un borrador para que Brandon lo envíe. La autorización de producción está registrada; la disponibilidad pública y las integraciones reales requieren evidencia separada.
+Empezar por [ARRANQUE_Y_OPERACION](docs/ARRANQUE_Y_OPERACION.md), [handover](docs/HANDOVER_JOSUE.md) y [pendientes externos](docs/PLAN_CIERRE_PRE_HANDOVER.md#activación-que-recibe-josué). El [mensaje WhatsApp](docs/MENSAJE_WHATSAPP_JOSUE.md) es un borrador listo para copiar; no se ha enviado.
+
+**Google Cloud queda reservado a Josué por instrucción de Brandon.** Esta ejecución no crea, modifica ni despliega recursos allí. Vibe Conversa es otro proyecto. Se entregan configuración/runbooks; dominio, proveedores reales, teléfonos, restore, costos y aprobación legal/comercial siguen pendientes.
+
+Para probar sin configuración personal, con Python 3 y Docker Desktop/Compose activos:
+
+```bash
+python3 ops/demo.py up
+```
+
+Windows: `py ops/demo.py up`. Abrir `http://127.0.0.1:3300`; credenciales sintéticas en `.local/nodo-demo/credentials.json`. `python3 ops/demo.py stop` detiene y conserva la base. La guía contiene recuperación y validación.
 
 ## Desarrollo local
 

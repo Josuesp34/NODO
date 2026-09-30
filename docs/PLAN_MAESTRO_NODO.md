@@ -8,6 +8,8 @@ version: 2.0
 # NODO — Plan maestro hasta aplicación publicada y funcional
 
 **Estado:** 🟡 Activo — especificación de ejecución, no evidencia de implementación.
+
+**Alcance de esta entrega actualizado el 30-09-2026:** por instrucción posterior de Brandon, el agente prepara y prueba el código y la infraestructura, integra los PRs y publica las versiones en GitHub. La creación, modificación y publicación de recursos Google Cloud queda a cargo de Josué. Vibe Conversa queda fuera. Las comprobaciones cloud, proveedores reales y dispositivos conservan su estado pendiente; las autorizaciones de despliegue de secciones históricas no permiten ejecutarlas en este chat.
 **Repositorio:** https://github.com/Josuesp34/NODO
 **Responsable:** Brandon. **Agente ejecutor solicitado:** GPT-6 Astra.
 

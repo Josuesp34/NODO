@@ -1,4 +1,5 @@
-from datetime import date, datetime, time
+from datetime import UTC, date, datetime, time, timedelta
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select, update
@@ -7,9 +8,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies import accessible_athlete, current_coach, current_user
 from app.api.schemas import BlockCreate, BlockView, PublishWorkout, WorkoutCreate, WorkoutReplace, WorkoutView
 from app.core.database import get_db
+from app.domain.comparison import local_day
 from app.infrastructure.database.models import PrescribedWorkout, TrainingBlock, User
 from app.services.access import roles_for
 from app.services.audit import add_audit
+from app.services.product_notifications import queue_product_event
 
 router = APIRouter(prefix="/athletes/{athlete_id}", tags=["Planning"])
 
@@ -29,7 +32,11 @@ def workout_view(workout: PrescribedWorkout) -> WorkoutView:
         coach_id=workout.coach_id,
         title=workout.title,
         description=workout.description,
-        scheduled_date=workout.scheduled_date,
+        scheduled_date=(
+            workout.scheduled_date.replace(tzinfo=UTC)
+            if workout.scheduled_date.tzinfo is None
+            else workout.scheduled_date.astimezone(UTC)
+        ),
         sport_type=workout.sport_type,
         block_id=workout.block_id,
         steps=workout.steps,
@@ -89,7 +96,8 @@ async def check_block(block_id: int | None, athlete_id: int, coach_id: int, sche
     )
     if block is None:
         raise HTTPException(422, "El bloque no pertenece a este atleta")
-    if not block.start_date <= scheduled_date.date() <= block.end_date:
+    athlete = await db.get(User, athlete_id)
+    if not block.start_date <= date.fromisoformat(local_day(scheduled_date, athlete.timezone)) <= block.end_date:
         raise HTTPException(422, "La sesión debe quedar dentro de las fechas del bloque")
 
 
@@ -128,16 +136,21 @@ async def list_workouts(
 ):
     if end < start:
         raise HTTPException(422, "El fin debe ser igual o posterior al inicio")
-    await accessible_athlete(db, user, athlete_id)
-    start_at, end_at = datetime.combine(start, time.min), datetime.combine(end, time.max)
+    athlete = await accessible_athlete(db, user, athlete_id)
+    if (end - start).days > 366:
+        raise HTTPException(422, "Selecciona hasta un año de sesiones")
+    zone = ZoneInfo(athlete.timezone)
+    start_at = datetime.combine(start, time.min, zone).astimezone(UTC)
+    end_at = datetime.combine(end + timedelta(days=1), time.min, zone).astimezone(UTC)
     result = await db.scalars(
         select(PrescribedWorkout)
         .where(
             PrescribedWorkout.athlete_id == athlete_id,
-            PrescribedWorkout.scheduled_date.between(start_at, end_at),
+            PrescribedWorkout.scheduled_date >= start_at,
+            PrescribedWorkout.scheduled_date < end_at,
             *(
                 []
-                if "coach" in await roles_for(db, user.id) or user.is_superuser
+                if (user.id != athlete_id and "coach" in await roles_for(db, user.id)) or user.is_superuser
                 else [PrescribedWorkout.status == "published"]
             ),
         )
@@ -243,6 +256,16 @@ async def publish_workout(
         entity_id=workout_id,
         action="publish",
         after={"version": published.version},
+    )
+    await queue_product_event(
+        db,
+        recipient_id=athlete_id,
+        athlete_id=athlete_id,
+        category="plan",
+        event_key=f"plan-published:{published.id}:{published.version}",
+        entity="workout",
+        entity_id=published.id,
+        entity_version=published.version,
     )
     await db.commit()
     return workout_view(published)

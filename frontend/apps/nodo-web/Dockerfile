@@ -6,7 +6,7 @@ COPY apps/nodo-web/package.json apps/nodo-web/package.json
 COPY apps/nodo-lab/package.json apps/nodo-lab/package.json
 COPY apps/nodo-mobile/package.json apps/nodo-mobile/package.json
 COPY packages/api-client/package.json packages/api-client/package.json
-RUN npm ci --workspace=@nodo/web --include-workspace-root
+RUN --mount=type=tmpfs,target=/root/.npm npm ci --workspace=@nodo/web --include-workspace-root
 
 FROM node:22-alpine AS builder
 WORKDIR /workspace

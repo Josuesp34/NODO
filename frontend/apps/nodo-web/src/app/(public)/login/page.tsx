@@ -1,34 +1,40 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Brand } from "@/components/ui";
-import { clearOfflineData } from "@/lib/offline-store";
+import { clearOfflineData, invalidateOtherSessions } from "@/lib/offline-store";
 
 export default function LoginPage() {
   const router = useRouter();
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const identityRequest = useRef<AbortController | null>(null);
+  const loginStarted = useRef(false);
 
   useEffect(() => {
-    void fetch("/api/session/me", { cache: "no-store" }).then((response) => {
-      if (response.ok) router.replace("/app");
-    });
+    const controller = new AbortController(); identityRequest.current = controller;
+    void fetch("/api/session/me", { cache: "no-store", signal: controller.signal }).then((response) => {
+      if (response.ok && !controller.signal.aborted && !loginStarted.current) router.replace("/app");
+    }).catch(() => undefined);
+    return () => controller.abort();
   }, [router]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setError(null); setSubmitting(true); clearOfflineData();
+    event.preventDefault(); loginStarted.current = true; identityRequest.current?.abort();
+    setError(null); setSubmitting(true); clearOfflineData();
     try {
       const response = await fetch("/api/session/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
       if (!response.ok) {
         const payload = await response.json().catch(() => null) as { detail?: string } | null;
         throw new Error(response.status === 401 ? "Correo o contraseña incorrectos." : payload?.detail ?? "No fue posible iniciar sesión.");
       }
+      invalidateOtherSessions();
       const requested = new URLSearchParams(window.location.search).get("next");
-      router.replace(requested?.startsWith("/") ? requested : "/app");
-      router.refresh();
+      const safeNext = requested?.startsWith("/") && !requested.startsWith("//") && !/[\\\u0000-\u001f]/.test(requested);
+      router.replace(safeNext && requested ? requested : "/app");
     } catch (reason) { setError(reason instanceof Error ? reason.message : "No fue posible iniciar sesión."); }
     finally { setSubmitting(false); }
   }

@@ -63,13 +63,8 @@ resource "google_cloud_run_v2_service" "api" {
         }
       }
 
-      env {
-        name  = "ENVIRONMENT"
-        value = var.environment
-      }
-
       dynamic "env" {
-        for_each = var.api_env
+        for_each = local.api_runtime_env
         content {
           name  = env.key
           value = env.value
@@ -77,7 +72,7 @@ resource "google_cloud_run_v2_service" "api" {
       }
 
       dynamic "env" {
-        for_each = var.api_secret_bindings
+        for_each = local.api_runtime_secrets
         content {
           name = env.key
           value_source {
@@ -103,6 +98,9 @@ resource "google_cloud_run_v2_service" "api" {
     google_project_service.required,
     google_project_iam_member.database_client,
     google_secret_manager_secret_iam_member.runtime_access,
+    google_storage_bucket_iam_member.api_fit,
+    google_project_iam_member.api_vertex_prompt,
+    terraform_data.runtime_contract,
   ]
 }
 
@@ -161,23 +159,13 @@ resource "google_cloud_run_v2_service" "pwa" {
         }
       }
 
-      env {
-        name  = "NODO_API_URL"
-        value = "${google_cloud_run_v2_service.api[0].uri}/api/v1"
-      }
-
-      env {
-        name  = "NODO_CLOUD_RUN_AUDIENCE"
-        value = google_cloud_run_v2_service.api[0].uri
-      }
-
-      env {
-        name  = "SESSION_COOKIE_SECURE"
-        value = "true"
-      }
-
       dynamic "env" {
-        for_each = var.pwa_env
+        for_each = merge(var.pwa_env, {
+          NODO_API_URL            = "${google_cloud_run_v2_service.api[0].uri}/api/v1"
+          NODO_CLOUD_RUN_AUDIENCE = google_cloud_run_v2_service.api[0].uri
+          SESSION_COOKIE_SECURE   = "true"
+          NODO_APP_ORIGIN         = var.public_app_url
+        })
         content {
           name  = env.key
           value = env.value
@@ -314,7 +302,7 @@ resource "google_cloud_run_v2_worker_pool" "worker" {
       }
 
       dynamic "env" {
-        for_each = merge(var.worker_env, { ENVIRONMENT = var.environment })
+        for_each = local.worker_runtime_env
         content {
           name  = env.key
           value = env.value
@@ -322,7 +310,7 @@ resource "google_cloud_run_v2_worker_pool" "worker" {
       }
 
       dynamic "env" {
-        for_each = var.worker_secret_bindings
+        for_each = local.worker_runtime_secrets
         content {
           name = env.key
           value_source {
@@ -352,6 +340,9 @@ resource "google_cloud_run_v2_worker_pool" "worker" {
   depends_on = [
     google_project_iam_member.database_client,
     google_secret_manager_secret_iam_member.runtime_access,
+    google_storage_bucket_iam_member.worker_fit,
+    google_storage_bucket_iam_member.worker_exports,
+    terraform_data.runtime_contract,
   ]
 }
 

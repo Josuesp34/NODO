@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createBackendFetch, fetchWithRotatingSession, type TokenPair } from "@/lib/backend-transport";
+import { protectProxyRequest } from "@/lib/bff-security";
 
 const apiUrl = (process.env.NODO_API_URL ?? "http://127.0.0.1:8000/api/v1").replace(/\/$/, "");
 const cookieBase = process.env.SESSION_COOKIE_NAME ?? "nodo_session";
@@ -69,16 +70,7 @@ async function forwardAuthenticated(path: string, init: RequestInit) {
   return forwarded;
 }
 
-export async function authenticatedProxy(path: string, request: Request) {
-  const requestHeaders = new Headers();
-  requestHeaders.set("Accept", request.headers.get("accept") ?? "application/json");
-  const contentType = request.headers.get("content-type");
-  if (contentType) requestHeaders.set("Content-Type", contentType);
-  const hasBody = !["GET", "HEAD"].includes(request.method);
-  const body = hasBody ? await request.arrayBuffer() : undefined;
-  const init: RequestInit = { method: request.method, headers: requestHeaders, body, redirect: "manual" };
-  return forwardAuthenticated(path, init);
-}
+export const authenticatedProxy = protectProxyRequest(forwardAuthenticated);
 
 export async function logoutSession() {
   const jar = await cookies();

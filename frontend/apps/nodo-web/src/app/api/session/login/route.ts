@@ -1,5 +1,4 @@
 import { establishSession } from "@/lib/session-server";
+import { protectSessionJson } from "@/lib/bff-security";
 
-export async function POST(request: Request) {
-  return establishSession("auth/login", await request.json());
-}
+export const POST = protectSessionJson((body) => establishSession("auth/login", body));

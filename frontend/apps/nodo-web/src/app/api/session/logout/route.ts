@@ -1,5 +1,4 @@
 import { logoutSession } from "@/lib/session-server";
+import { protectSessionRequest } from "@/lib/bff-security";
 
-export async function POST() {
-  return logoutSession();
-}
+export const POST = protectSessionRequest(logoutSession);

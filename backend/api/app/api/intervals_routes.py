@@ -28,6 +28,7 @@ from app.services.intervals_real import (
     enqueue_sync,
     external_id,
     queue_remote_disconnect,
+    queue_token_disconnect,
 )
 from app.services.provider_policy import require_provider_consent
 
@@ -127,42 +128,50 @@ async def callback(
     try:
         token = await RealIntervalsAdapter().exchange_code(payload.code)
     except IntervalsError as exc:
+        if exc.cleanup_token:
+            await queue_token_disconnect(db, cipher().encrypt(exc.cleanup_token.encode()).decode())
+            await db.commit()
         raise HTTPException(exc.status, exc.code) from None
-    # Consent/assignment can change while exchanging credentials.
-    await own_athlete(db, user, state.athlete_id)
-    connection = await db.scalar(
-        select(AthleteConnection)
-        .where(AthleteConnection.athlete_id == state.athlete_id, AthleteConnection.provider == PROVIDER)
-        .with_for_update()
-    )
-    external = str(token["athlete"]["id"])
-    duplicate = await db.scalar(
-        select(AthleteConnection.id).where(
-            AthleteConnection.provider == PROVIDER,
-            AthleteConnection.external_athlete_id == external,
-            AthleteConnection.athlete_id != state.athlete_id,
-            AthleteConnection.status.in_(["connected", "syncing"]),
-        )
-    )
-    if duplicate:
-        await RealIntervalsAdapter().disconnect(token["access_token"])
-        raise HTTPException(409, "INTERVALS_ATHLETE_ALREADY_CONNECTED")
-    if connection is None:
-        connection = AthleteConnection(athlete_id=state.athlete_id, provider=PROVIDER, status="connected")
-        db.add(connection)
-    connection.external_athlete_id = external
-    connection.access_token_enc = cipher().encrypt(token["access_token"].encode()).decode()
-    connection.refresh_token_enc = None
-    connection.scopes = str(token["scope"]).split(",")
-    connection.status = "connected"
-    await enqueue_sync(db, state.athlete_id, backfill=True, key=f"intervals:backfill:state:{state.id}")
-    add_audit(db, actor_id=user.id, entity="athlete_connection", entity_id=state.athlete_id, action="authorize")
+    token_enc = cipher().encrypt(token["access_token"].encode()).decode()
     try:
+        # Consent/assignment can change while exchanging credentials.
+        await own_athlete(db, user, state.athlete_id)
+        connection = await db.scalar(
+            select(AthleteConnection)
+            .where(AthleteConnection.athlete_id == state.athlete_id, AthleteConnection.provider == PROVIDER)
+            .with_for_update()
+        )
+        external = str(token["athlete"]["id"])
+        duplicate = await db.scalar(
+            select(AthleteConnection.id).where(
+                AthleteConnection.provider == PROVIDER,
+                AthleteConnection.external_athlete_id == external,
+                AthleteConnection.athlete_id != state.athlete_id,
+                AthleteConnection.status.in_(["connected", "syncing", "disconnect_pending"]),
+            )
+        )
+        if duplicate:
+            raise HTTPException(409, "INTERVALS_ATHLETE_ALREADY_CONNECTED")
+        if connection is None:
+            connection = AthleteConnection(athlete_id=state.athlete_id, provider=PROVIDER, status="connected")
+            db.add(connection)
+        connection.external_athlete_id = external
+        connection.access_token_enc = token_enc
+        connection.refresh_token_enc = None
+        connection.scopes = str(token["scope"]).split(",")
+        connection.status = "connected"
+        await enqueue_sync(db, state.athlete_id, backfill=True, key=f"intervals:backfill:state:{state.id}")
+        add_audit(db, actor_id=user.id, entity="athlete_connection", entity_id=state.athlete_id, action="authorize")
         await db.commit()
-    except IntegrityError:
+    except BaseException as exc:
+        # First commit already consumed OAuth state. A rejected/aborted local save
+        # cannot strand a newly issued capability or retry its code exchange.
         await db.rollback()
-        await RealIntervalsAdapter().disconnect(token["access_token"])
-        raise HTTPException(409, "INTERVALS_ATHLETE_ALREADY_CONNECTED") from None
+        await queue_token_disconnect(db, token_enc)
+        await db.commit()
+        if isinstance(exc, IntegrityError):
+            raise HTTPException(409, "INTERVALS_ATHLETE_ALREADY_CONNECTED") from None
+        raise
     return {"status": "connected", "sync": "queued", "backfill_days": settings.INTERVALS_BACKFILL_DAYS}
 
 

@@ -14,6 +14,7 @@ import httpx
 from cryptography.fernet import Fernet
 from fastapi import HTTPException
 from sqlalchemy import delete, select, update
+from sqlalchemy.exc import IntegrityError
 
 from app.core.config import settings
 from app.infrastructure.database.models import Activity, User
@@ -44,6 +45,9 @@ SOURCES = {
 class IntervalsError(Exception):
     def __init__(self, code: str, status: int = 502):
         self.code, self.status = code, status
+        # Ephemeral only: callback encrypts this capability into durable cleanup.
+        # It never appears in exception text or a public response.
+        self.cleanup_token: str | None = None
         super().__init__(code)
 
 
@@ -118,19 +122,25 @@ class RealIntervalsAdapter:
                 "code": code,
             },
         )
-        if not isinstance(result, dict) or str(result.get("token_type", "")).lower() != "bearer":
-            raise IntervalsError("INTERVALS_INVALID_TOKEN_RESPONSE")
-        if not isinstance(result.get("access_token"), str) or not result["access_token"]:
-            raise IntervalsError("INTERVALS_INVALID_TOKEN_RESPONSE")
-        athlete = result.get("athlete")
-        if not isinstance(athlete, dict) or not athlete.get("id"):
-            raise IntervalsError("INTERVALS_INVALID_TOKEN_RESPONSE")
-        external_id(athlete["id"])
-        granted = str(result.get("scope", "")).split(",")
-        if not set(SCOPES).issubset(granted):
-            # Disconnect even partially granted credentials; never persist unusable tokens.
-            await self.disconnect(result["access_token"])
-            raise IntervalsError("INTERVALS_REQUIRED_SCOPES_MISSING", 422)
+        issued = result.get("access_token") if isinstance(result, dict) else None
+        issued = issued if isinstance(issued, str) and issued else None
+        try:
+            if not isinstance(result, dict) or str(result.get("token_type", "")).lower() != "bearer" or not issued:
+                raise IntervalsError("INTERVALS_INVALID_TOKEN_RESPONSE")
+            athlete = result.get("athlete")
+            if not isinstance(athlete, dict) or not athlete.get("id"):
+                raise IntervalsError("INTERVALS_INVALID_TOKEN_RESPONSE")
+            external_id(athlete["id"])
+            granted = str(result.get("scope", "")).split(",")
+            if not set(SCOPES).issubset(granted):
+                raise IntervalsError("INTERVALS_REQUIRED_SCOPES_MISSING", 422)
+        except IntervalsError as exc:
+            if issued:
+                try:
+                    await self.disconnect(issued)
+                except IntervalsError:
+                    exc.cleanup_token = issued
+            raise
         return result
 
     async def disconnect(self, token):
@@ -287,23 +297,35 @@ async def enqueue_sync(db, athlete_id, *, backfill=False, event=None, key=None):
     return job.id
 
 
-async def queue_remote_disconnect(db, connection):
-    if not connection.access_token_enc:
+async def queue_token_disconnect(db, token_enc: str | None):
+    """Cleanup is independent of a person/connection that may already be erased."""
+    if not token_enc:
         return None
-    key = f"intervals:disconnect:{connection.id}:{digest(connection.access_token_enc)}"
+    key = f"intervals:disconnect:{digest(token_enc)}"
     existing = await db.scalar(select(Job.id).where(Job.dedupe_key == key))
     if existing:
         return existing
     job = Job(
         kind="intervals_disconnect",
-        payload={"token_enc": connection.access_token_enc},
+        payload={"token_enc": token_enc},
         run_after=datetime.now(UTC),
         dedupe_key=key,
         max_attempts=settings.JOB_MAX_ATTEMPTS,
     )
-    db.add(job)
-    await db.flush()
+    try:
+        async with db.begin_nested():
+            db.add(job)
+            await db.flush()
+    except IntegrityError:
+        existing = await db.scalar(select(Job.id).where(Job.dedupe_key == key))
+        if existing is None:
+            raise
+        return existing
     return job.id
+
+
+async def queue_remote_disconnect(db, connection):
+    return await queue_token_disconnect(db, connection.access_token_enc)
 
 
 async def execute_intervals_disconnect_job(db, job):

@@ -271,7 +271,22 @@ async def send_notification(db: AsyncSession, job: Job, *, transport=None, now: 
     if sub.expires_at and aware(sub.expires_at) <= now:
         sub.revoked_at, sub.subscription_enc, delivery.status = now, None, "expired"
         return
+    deadline = None
+    if "valid_until" in job.payload:
+        try:
+            deadline = datetime.fromisoformat(job.payload["valid_until"].replace("Z", "+00:00"))
+            if deadline.tzinfo is None:
+                raise ValueError("A deadline needs an explicit timezone")
+        except (AttributeError, TypeError, ValueError):
+            delivery.status = "cancelled"
+            return
+        if now >= deadline:
+            delivery.status = "cancelled"
+            return
     next_time = next_allowed(preference, now)
+    if deadline is not None and next_time >= deadline:
+        delivery.status = "cancelled"
+        return
     if next_time > now:
         job.run_after = next_time
         raise PushDeferred()

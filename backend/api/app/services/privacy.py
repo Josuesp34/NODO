@@ -62,7 +62,7 @@ def references_user(value, user_id: int) -> bool:
                 and item == user_id
             ):
                 return True
-            if key in {"athlete_ids", "user_ids"} and isinstance(item, list) and user_id in item:
+            if key in {"athlete_ids", "user_ids", "context_athlete_ids"} and isinstance(item, list) and user_id in item:
                 return True
             if references_user(item, user_id):
                 return True
@@ -181,6 +181,11 @@ async def _owned_ids(db: AsyncSession, user_id: int) -> dict[str, set[int]]:
     for confirmation in (await db.scalars(select(AssistantConfirmation))).all():
         if references_user(confirmation.payload, user_id) or references_user(confirmation.result, user_id):
             selected.setdefault("assistant_threads", set()).add(confirmation.thread_id)
+    runs_table = Base.metadata.tables.get("assistant_runs")
+    if runs_table is not None:
+        for row in (await db.execute(select(runs_table.c.thread_id, runs_table.c.result))).mappings():
+            if references_user(row["result"], user_id):
+                selected.setdefault("assistant_threads", set()).add(row["thread_id"])
     changed = True
     while changed:
         changed = False
@@ -331,7 +336,7 @@ async def queue_remote_revocations(db: AsyncSession, user_id: int) -> None:
 
 
 async def export_account_data(db: AsyncSession, user: User) -> dict:
-    from app.services.access import has_athlete_access
+    from app.services.access import has_athlete_access, roles_for
     from app.services.assistant import assistant_message_view
 
     selected = await _owned_ids(db, user.id)
@@ -391,6 +396,7 @@ async def export_account_data(db: AsyncSession, user: User) -> dict:
                 key: value
                 for key, value in row.items()
                 if key not in secrets_columns
+                and not (name == "assistant_runs" and key == "result")
                 and "token" not in key
                 and "secret" not in key
                 and not key.endswith("_enc")
@@ -398,7 +404,11 @@ async def export_account_data(db: AsyncSession, user: User) -> dict:
             for row in visible_rows
         ]
     messages = []
+    current_roles = await roles_for(db, user.id)
     for thread in (await db.scalars(select(AssistantThread).where(AssistantThread.owner_id == user.id))).all():
+        own_athlete_thread = thread.role == "athlete" and thread.athlete_scope_id in (None, user.id)
+        if thread.role not in current_roles and not user.is_superuser and not own_athlete_thread:
+            continue
         if thread.athlete_scope_id not in (None, user.id) and not await has_athlete_access(
             db, user, thread.athlete_scope_id
         ):

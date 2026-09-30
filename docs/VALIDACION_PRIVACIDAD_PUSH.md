@@ -92,3 +92,30 @@ resolución final deben repetirse después de integrar requirements. No se modif
 API del proveedor verificada en [pywebpush](https://github.com/web-push-libs/pywebpush),
 versión consultada en [PyPI](https://pypi.org/project/pywebpush/), y contrato del navegador en
 [PushManager.subscribe](https://developer.mozilla.org/en-US/docs/Web/API/PushManager/subscribe).
+
+## Corrección de proveedores y procedencia
+
+Rama aislada `codex/proveedores-correcciones`, base integrada `5466539`. Los tokens emitidos por
+OAuth que no pueden guardarse tras una revocación, borrado, duplicado o fallo de persistencia quedan
+en un trabajo de desconexión durable con sólo el token cifrado. El estado OAuth sigue consumido;
+un fallo HTTP de revocación conserva el trabajo y una confirmación satisfactoria vacía su payload.
+
+El asistente registra internamente todos los atletas utilizados en contexto e historial, aunque el
+modelo omita citarlos. Revalida esa procedencia al guardar, mostrar historial y reproducir una petición.
+La exportación omite `AssistantRun.result` y aplica el rol actual al chat; el borrado también detecta
+la procedencia interna. Los identificadores de procedencia no se incluyen en la respuesta pública.
+Un dato enviado con consentimiento vigente al comienzo no puede retirarse del proveedor mediante
+este control: la corrección impide guardar o devolver una respuesta después de la revocación.
+
+Los trabajos Push admiten un `valid_until` opcional con zona horaria. Un plazo vencido, inválido o
+anterior al fin del silencio cancela el aviso antes de llamar al transporte.
+
+Validación local con HTTP interceptado, SQLite y PostgreSQL 16:
+
+- Suite conjunta de proveedores, privacidad y producto: 84 correctas, una omitida (carrera SQLite
+  cubierta en PostgreSQL), antes de añadir el plazo Push.
+- Regresiones finales de este cambio, exportación, roles, replay, streaming y scopes: 29 correctas.
+- Ruff de los archivos modificados y `git diff --check`: correctos.
+
+No se realizaron llamadas a cuentas reales, entrega Push a dispositivos ni operaciones en Google Cloud.
+La suite completa integrada y la evidencia de release/CI corresponden al cierre de la rama principal.

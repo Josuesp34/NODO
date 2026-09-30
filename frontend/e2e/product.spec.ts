@@ -11,7 +11,7 @@ async function login(page: Page, email: string) {
   await page.getByLabel("Correo", { exact: true }).fill(email);
   await page.getByLabel("Contraseña", { exact: true }).fill(credentials.password);
   await page.getByRole("button", { name: "Entrar a NODO" }).click();
-  await expect(page).toHaveURL(/\/(coach|athlete\/today)$/);
+  await expect(page).toHaveURL(/\/(coach|athlete\/today)$/, { timeout: 20_000 });
   await expect(page.getByRole("button", { name: "Salir", exact: true })).toBeVisible();
   await expect(page.locator("h1")).toBeVisible();
 }

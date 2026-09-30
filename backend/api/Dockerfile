@@ -13,7 +13,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends gcc && rm -rf /
 
 # Instalar dependencias de Python
 COPY requirements.txt .
-RUN pip wheel --no-cache-dir --no-deps --wheel-dir /build/wheels -r requirements.txt
+RUN python -m pip install --no-cache-dir --upgrade pip==26.2.0 && \
+    python -m pip wheel --no-cache-dir --no-deps --wheel-dir /build/wheels -r requirements.txt
 
 # Etapa 2: Runtime
 FROM python:3.11-slim
@@ -28,7 +29,8 @@ WORKDIR /app
 
 # Copiar wheels de la etapa de build e instalar
 COPY --from=builder /build/wheels /wheels
-RUN pip install --no-cache /wheels/* && rm -rf /wheels
+RUN python -m pip install --no-cache-dir --upgrade pip==26.2.0 && \
+    python -m pip install --no-cache-dir /wheels/* && rm -rf /wheels
 
 # Copiar el código de la aplicación
 COPY ./app ./app

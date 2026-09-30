@@ -13,8 +13,8 @@ Plataforma para que entrenadores planifiquen, publiquen y revisen el entrenamien
 - [Visión, alcance, objetivos y plan de ocho semanas](docs/PLAN_PRODUCTO.md).
 - [Arquitectura y contratos propuestos](docs/ARQUITECTURA.md).
 - [Contratos de la API base](docs/API_NODO.md).
-- [Guía de arranque de NODO Lab y NODO](docs/FRONTEND.md).
-- [Relevo de frontend para Antigravity](docs/ANTIGRAVITY_FRONTEND_HANDOFF.md).
+- [Guía de arranque de la PWA](docs/FRONTEND.md).
+- [Relevo histórico de frontend para Antigravity](docs/ANTIGRAVITY_FRONTEND_HANDOFF.md).
 - [Estructura del repositorio](docs/ESTRUCTURA_REPOSITORIO.md).
 - [Guía de colaboración](CONTRIBUTING.md).
 - [Condiciones para abrir un piloto](docs/PILOT_READINESS.md).
@@ -22,7 +22,7 @@ Plataforma para que entrenadores planifiquen, publiquen y revisen el entrenamien
 - [Pendientes del MVP, ruta crítica y criterios de prueba](docs/PENDIENTES_MVP.md).
 - [Plataforma GCP](infra/README.md), [operación](docs/OPERACION_GCP.md), [seguridad](docs/SEGURIDAD.md), [costos](docs/COSTOS.md) y [lanzamiento](docs/LANZAMIENTO.md).
 
-**Estado actual: piloto funcional y vendible de forma acompañada, listo en código; todavía no publicado.** El recorrido local coach → invitación → activación → planificación → publicación → atleta está verificado sobre PostgreSQL 16 real. FIT manual es funcional. IA e Intervals.icu reales no están configurados ni completos: sólo existen sus modos simulados y contratos seguros. La publicación exige todavía credenciales/aprobaciones, plan/apply, URL HTTPS, correo/dominio, integraciones reales y los gates de `LANZAMIENTO.md`. Consultar `FUNCIONALIDADES_PRODUCTO.md` antes de ofrecer una capacidad.
+**Estado actual: piloto funcional local; producción pendiente de configuración y verificación.** El recorrido local coach → invitación → activación → planificación → publicación → atleta está verificado sobre PostgreSQL 16 real. FIT manual es funcional. IA e Intervals.icu reales no están configurados ni completos: sólo existen sus modos simulados y contratos seguros. La versión candidata y la evidencia de publicación de código están en [GitHub Release](https://github.com/Josuesp34/NODO/releases/tag/v0.4.0-rc.1); un tag no demuestra producción. Falta verificar GCP/billing, plan/apply, URL HTTPS, correo/dominio, integraciones reales y los criterios de `LANZAMIENTO.md`. Consultar `FUNCIONALIDADES_PRODUCTO.md` antes de ofrecer una capacidad.
 
 ## Entrega con Josué
 
@@ -35,6 +35,7 @@ Python 3.11 o 3.12 y Docker Desktop con motor Linux activo. Desde la raíz del r
 ```powershell
 cd backend/api
 python -m venv .venv
+.venv/Scripts/python.exe -m pip install --upgrade pip==26.2.0
 .venv/Scripts/python.exe -m pip install -r requirements-dev.txt
 Copy-Item .env.example .env
 ```

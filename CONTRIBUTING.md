@@ -16,6 +16,7 @@ Cada cambio debe incluir:
 ## Preparar el entorno una vez por clon
 
 ```bash
+python -m pip install --upgrade pip==26.2.0
 python -m pip install -r backend/api/requirements-dev.txt
 pre-commit install
 ```
@@ -26,7 +27,7 @@ Los ganchos corren `ruff`, higiene básica de archivos y un bloqueo explícito d
 
 - Backend: `python -m ruff check .`, `python -m ruff format --check .`, `python -m pytest -q` y migraciones Alembic válidas sobre PostgreSQL 16, todo desde `backend/api`.
 - Frontend: `npm run typecheck`, `npm run test:web`, `npm run build:web` y `npm run build:lab`.
-- Plataforma: `terraform fmt -check -recursive infra`, `terraform validate` en ambos entornos y `bash -n ops/*.sh`.
+- Plataforma: `terraform fmt -check -recursive infra`, `terraform validate` en ambos entornos y `for script in ops/*.sh; do bash -n "$script"; done`.
 - Repositorio: `pre-commit run --all-files` limpio.
 - Cambios de esquema: migración nueva, reversible cuando sea razonable y comprobada sobre una base limpia.
 - Rutas protegidas: casos de permiso propio, permiso denegado y conflicto concurrente cuando corresponda.

@@ -14,11 +14,12 @@ Fecha: 29-09-2026. Esta evidencia se completa después de ejecutar los checks y 
 - Google ADC pudo renovarse y consultar proyectos, pero no se verificó la identidad prevista y no se encontró proyecto NODO. No se aprovisionaron recursos.
 - GitHub no tenía Environments, variables ni secretos de despliegue de NODO en el preflight.
 
-## Pendientes de evidencia
+## Publicación e integración
 
-- [ ] CI del SHA exacto, builds/scans y migraciones PostgreSQL 16.
-- [ ] PR completo integrado a dev y release integrado a main.
-- [ ] Tag/version publicada y readback remoto.
+El [PR completo #7](https://github.com/Josuesp34/NODO/pull/7) y la release contienen el estado remoto de CI del SHA exacto, builds/scans, migraciones PostgreSQL 16, promoción a `main` y readback del tag. Consultar el comprobante adjunto a la release para el resultado final; no inferirlo de un check local.
+
+## Pendientes de evidencia operativa
+
 - [ ] URL de staging/producción y E2E real.
 - [ ] IA, Intervals, correo y push reales.
 - [ ] Restauración, monitoreo, costo y dispositivos físicos.

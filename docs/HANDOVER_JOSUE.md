@@ -27,7 +27,8 @@ La entrega incluye todos los avances locales de NODO y las correcciones de publi
 
 - Rama de trabajo: `codex/handover-josue`.
 - Integración: PR completo a `dev`, después PR de release a `main`, sujeto a los checks y protecciones existentes.
-- Versión de código prevista: `v0.4.0-rc.1`; identifica un candidato y no una aplicación operativa en producción.
+- Versión de entrega: [`v0.4.0-rc.1`](https://github.com/Josuesp34/NODO/releases/tag/v0.4.0-rc.1); identifica un candidato y no una aplicación operativa en producción.
+- PR completo: [#7](https://github.com/Josuesp34/NODO/pull/7). El estado de integración y la promoción a `main` se verifican en GitHub Release.
 - La evidencia final de SHA, PRs, CI y publicación se registra en [VALIDACION_HANDOVER.md](VALIDACION_HANDOVER.md) y en GitHub Release.
 - No utilizar un ZIP que omita archivos nuevos, `.env` compartidos ni una carpeta con cambios sin versionar como fuente de despliegue.
 
@@ -41,6 +42,7 @@ cd NODO
 git checkout v0.4.0-rc.1
 cd backend/api
 python3 -m venv .venv
+.venv/bin/python -m pip install --upgrade pip==26.2.0
 .venv/bin/python -m pip install -r requirements-dev.txt
 cp .env.example .env
 ```

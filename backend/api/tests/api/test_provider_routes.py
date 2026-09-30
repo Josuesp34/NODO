@@ -425,3 +425,55 @@ def test_explicit_consent_revocation_blocks_chats_and_connections(pilot_api, mon
         f"/api/v1/assistant/threads/{thread['id']}/messages", headers=headers, json={"content": "consulta"}
     )
     assert result.status_code == 403 and "CONSENT_REQUIRED:ai_assistant" in result.text
+
+
+def test_general_thread_replay_redacts_newly_revoked_athlete(pilot_api):
+    from app.infrastructure.database.models.product import CoachAthleteAssignment
+    from app.services.assistant import REDACTED_MESSAGE
+
+    coach, athlete, _ = scenario(pilot_api)
+    complaint = pilot_api.post(
+        f"/api/v1/athletes/{athlete['id']}/complaints",
+        headers=coach,
+        json={"zone": "rodilla", "laterality": "left", "intensity_0_10": 5, "started_on": "2026-09-20"},
+    )
+    # Coach cannot write athlete complaints; seed review evidence directly to exercise a general thread.
+    assert complaint.status_code == 403
+
+    async def seed():
+        from app.infrastructure.database.models.product import ReviewItem
+
+        async for db in pilot_api.app.dependency_overrides[get_db]():
+            db.add(
+                ReviewItem(
+                    athlete_id=athlete["id"],
+                    kind="complaint",
+                    priority="high",
+                    reason="Evidencia sensible para replay",
+                    dedupe_key="replay-sensitive",
+                    status="open",
+                )
+            )
+            await db.commit()
+
+    asyncio.run(seed())
+    thread = pilot_api.post("/api/v1/assistant/threads", headers=coach, json={"role": "coach"}).json()
+    url = f"/api/v1/assistant/threads/{thread['id']}/messages"
+    payload = {"content": "Mis revisiones", "request_key": "replay-revocation-fixture"}
+    first = pilot_api.post(url, headers=coach, json=payload)
+    assert first.status_code == 200 and "Evidencia sensible" in first.json()["message"]
+
+    async def revoke():
+        async for db in pilot_api.app.dependency_overrides[get_db]():
+            assignment = await db.scalar(
+                select(CoachAthleteAssignment).where(CoachAthleteAssignment.athlete_id == athlete["id"])
+            )
+            assignment.status = "revoked"
+            await db.commit()
+
+    asyncio.run(revoke())
+    repeated = pilot_api.post(url, headers=coach, json=payload)
+    assert repeated.status_code == 200, repeated.text
+    assert repeated.json()["message"] == REDACTED_MESSAGE and repeated.json()["citations"] == []
+    assert "Evidencia sensible" not in repeated.text
+    assert len(pilot_api.get(url, headers=coach).json()) == 2

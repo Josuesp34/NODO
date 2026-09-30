@@ -145,7 +145,18 @@ async def prepare_run(db, user, thread, payload):
         if previous.request_hash != request_hash:
             raise HTTPException(409, "AI_REQUEST_KEY_CONFLICT")
         if previous.status == "completed":
-            return previous, None
+            saved = previous.result or {}
+            message_id = saved.get("message_id")
+            message = await db.get(AssistantMessage, message_id) if isinstance(message_id, int) else None
+            if message is None or message.thread_id != thread.id:
+                raise HTTPException(404, "AI_CACHED_MESSAGE_UNAVAILABLE")
+            # A general coach thread can outlive an assignment. Project cached replies through
+            # the same current-access redaction as history instead of returning raw run.result.
+            view = await assistant_message_view(db, user, message)
+            cached = {**saved, "message": view["content"], "citations": view["citations"]}
+            if view["content"] != message.content:
+                cached["confirmation"] = None
+            return previous, {"cached": cached}
         raise HTTPException(409, f"AI_REQUEST_{previous.status.upper()}")
     context, citations = await full_context(db, user, thread)
     history_rows = (
@@ -214,6 +225,8 @@ async def prepare_run(db, user, thread, payload):
 
 
 async def complete_run(db, user, thread, payload, run, prepared):
+    if "cached" in prepared:
+        return prepared["cached"]
     run_identifier = run.id
     confirmation = None
     selected = prepared["citations"]

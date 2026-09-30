@@ -6,7 +6,7 @@ from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock
 
 import pytest
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from test_pilot_product import make_fit
 from test_privacy_notifications import private_api as _private_api
 
@@ -20,6 +20,17 @@ from app.services import object_store, privacy_jobs
 def files_api(request, monkeypatch, tmp_path):
     # Reuse the isolated consent/FK-aware fixture, never a real athlete database.
     for api in _private_api.__wrapped__(request, monkeypatch):
+        if request.param == "postgres":
+            # create_all declares the partitioned parent; Alembic normally creates
+            # its default partition. Reproduce that fixture-only invariant here.
+            async def create_partition(sessions=api.sessions):
+                async with sessions() as db:
+                    await db.execute(
+                        text("CREATE TABLE telemetry_records_default PARTITION OF telemetry_records DEFAULT")
+                    )
+                    await db.commit()
+
+            asyncio.run(create_partition())
         api.config.STORAGE_BACKEND = "local"
         api.config.STORAGE_LOCAL_PATH = str(tmp_path)
         api.config.MAX_FIT_BYTES = 1024 * 1024

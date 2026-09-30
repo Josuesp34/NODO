@@ -12,7 +12,52 @@ permissions:
 
 jobs:
   dependency-review:
-    if: github.event_name == 'pull_request'
+    name: Resolved dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 22
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+      - name: Verify audit failure handling
+        run: node --test ops/tests/security-audit.test.mjs
+      - name: Resolve frontend without install scripts
+        working-directory: frontend
+        run: npm ci --ignore-scripts --no-audit
+      - name: Freeze actual Python resolution before installing audit tools
+        run: |
+          python -m venv "$RUNNER_TEMP/nodo-resolved"
+          "$RUNNER_TEMP/nodo-resolved/bin/python" -m pip install --disable-pip-version-check pip==26.2.0
+          "$RUNNER_TEMP/nodo-resolved/bin/python" -m pip install --disable-pip-version-check -r backend/api/requirements-dev.txt
+          "$RUNNER_TEMP/nodo-resolved/bin/python" -m pip freeze --all > "$RUNNER_TEMP/nodo-resolved-requirements.txt"
+          python -m venv "$RUNNER_TEMP/nodo-audit-tools"
+          "$RUNNER_TEMP/nodo-audit-tools/bin/python" -m pip install --disable-pip-version-check pip==26.2.0
+          "$RUNNER_TEMP/nodo-audit-tools/bin/python" -m pip install --disable-pip-version-check pip-audit==2.10.1
+      - name: Audit runtime, full npm tree and frozen Python tree
+        run: bash ops/audit-dependencies.sh "$RUNNER_TEMP/nodo-audit-tools/bin/python" "$RUNNER_TEMP/nodo-resolved-requirements.txt" "$RUNNER_TEMP/dependency-audit-reports"
+      - name: Native review status
+        if: always()
+        env:
+          NATIVE_ENABLED: ${{ vars.NATIVE_DEPENDENCY_REVIEW_ENABLED }}
+        run: |
+          if [[ "$NATIVE_ENABLED" != "true" ]]; then
+            printf '%s\n' 'Dependency Review nativo: pendiente de habilitar Dependency Graph y accesos por el propietario; job omitido, no aprobado. npm y pip-audit son el control obligatorio completo.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: resolved-dependency-audit-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/dependency-audit-reports/
+            ${{ runner.temp }}/nodo-resolved-requirements.txt
+          retention-days: 30
+
+  native-dependency-review:
+    name: Native dependency review (owner enabled)
+    if: github.event_name == 'pull_request' && vars.NATIVE_DEPENDENCY_REVIEW_ENABLED == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -37,16 +82,20 @@ jobs:
       security-events: write
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-      - uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
+      - uses: aquasecurity/trivy-action@d2a0b60797ff03db6132bd4e2b293f9b37081297
         with:
+          version: v0.74.0
+          cache: false
           scan-type: fs
           scan-ref: .
           format: sarif
           output: trivy-results.sarif
+          exit-code: "1"
           severity: HIGH,CRITICAL
-          ignore-unfixed: true
+          limit-severities-for-sarif: true
+          ignore-unfixed: false
       - uses: github/codeql-action/upload-sarif@3ea06614dafe36dec890db3446326e0d40ce53d4
-        if: always()
+        if: always() && hashFiles('trivy-results.sarif') != ''
         with:
           sarif_file: trivy-results.sarif
 

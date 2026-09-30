@@ -63,21 +63,25 @@ jobs:
           provenance: mode=max
           sbom: true
       - name: Scan API image
-        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
+        uses: aquasecurity/trivy-action@d2a0b60797ff03db6132bd4e2b293f9b37081297
         with:
+          version: v0.74.0
+          cache: false
           image-ref: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.AR_REPOSITORY }}/api@${{ steps.api.outputs.digest }}
           format: table
           exit-code: "1"
           severity: HIGH,CRITICAL
-          ignore-unfixed: true
+          ignore-unfixed: false
       - name: Scan PWA image
-        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
+        uses: aquasecurity/trivy-action@d2a0b60797ff03db6132bd4e2b293f9b37081297
         with:
+          version: v0.74.0
+          cache: false
           image-ref: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.AR_REPOSITORY }}/pwa@${{ steps.pwa.outputs.digest }}
           format: table
           exit-code: "1"
           severity: HIGH,CRITICAL
-          ignore-unfixed: true
+          ignore-unfixed: false
       - name: Migrate before shifting traffic
         env:
           API_IMAGE: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.AR_REPOSITORY }}/api@${{ steps.api.outputs.digest }}

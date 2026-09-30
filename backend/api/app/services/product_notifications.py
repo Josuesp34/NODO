@@ -112,11 +112,13 @@ async def source_is_current(db, payload, user, now):
         await require_processing_consent(db, athlete_id, "training_data_processing")
         if user.id != athlete_id:
             assignment = await db.scalar(
-                select(CoachAthleteAssignment).where(
+                select(CoachAthleteAssignment)
+                .where(
                     CoachAthleteAssignment.coach_id == user.id,
                     CoachAthleteAssignment.athlete_id == athlete_id,
                     CoachAthleteAssignment.status == "active",
                 )
+                .execution_options(populate_existing=True)
             )
             if assignment is None:
                 return False

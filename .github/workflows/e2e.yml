@@ -27,6 +27,17 @@ jobs:
       - name: Browser checks against actual API, PostgreSQL and worker
         run: npm run test:e2e
         working-directory: frontend
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r backend/api/requirements-dev.txt
+      - name: Seed 70 athletes and measure authenticated product requests
+        run: python ops/qa_demo.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: synthetic-product-evidence
+          path: .local/nodo-demo/qa-*.json
+          if-no-files-found: error
       - name: Stop demo while preserving its database
         if: always()
         run: python3 ops/demo.py stop

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Brand } from "@/components/ui";
-import { clearOfflineData } from "@/lib/offline-store";
+import { clearOfflineData, invalidateOtherSessions } from "@/lib/offline-store";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,6 +26,7 @@ export default function LoginPage() {
         const payload = await response.json().catch(() => null) as { detail?: string } | null;
         throw new Error(response.status === 401 ? "Correo o contraseña incorrectos." : payload?.detail ?? "No fue posible iniciar sesión.");
       }
+      invalidateOtherSessions();
       const requested = new URLSearchParams(window.location.search).get("next");
       const safeNext = requested?.startsWith("/") && !requested.startsWith("//") && !/[\\\u0000-\u001f]/.test(requested);
       router.replace(safeNext && requested ? requested : "/app");

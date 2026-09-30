@@ -158,6 +158,34 @@ test("historial, check-in, molestias y chat del atleta persisten en el servidor"
 
 test.describe("transporte autorizado sin interceptación del service worker", () => {
   test.use({ serviceWorkers: "block" });
+test("entrar en otra cuenta invalida la copia repoblada durante el login", async ({ page, context }) => {
+  const nextAccount = await context.newPage();
+  await nextAccount.goto("/login");
+  await expect(nextAccount.getByLabel("Correo", { exact: true })).toBeVisible();
+  await login(page, "athlete-demo@example.com");
+  await expect(page.getByText("Rodaje de demostración", { exact: true }).first()).toBeVisible();
+  let release!: () => void;
+  let entered = false;
+  const delayed = new Promise<void>((resolve) => { release = resolve; });
+  await nextAccount.route("**/api/session/login", async (route) => {
+    entered = true;
+    await delayed;
+    await route.continue();
+  });
+  await nextAccount.getByLabel("Correo", { exact: true }).fill("coach-demo@example.com");
+  await nextAccount.getByLabel("Contraseña", { exact: true }).fill(credentials.password);
+  await nextAccount.getByRole("button", { name: "Entrar a NODO" }).click();
+  await expect.poll(() => entered).toBe(true);
+  // The first tab may revalidate the old cookie while the new login is pending.
+  await page.reload();
+  await expect.poll(() => page.evaluate(() => Object.keys(localStorage).some((key) => key.startsWith("nodo.offline.workouts.")))).toBe(true);
+  release();
+  await expect(nextAccount).toHaveURL(/\/coach$/);
+  await expect(page.getByText("Rodaje de demostración", { exact: true })).toHaveCount(0);
+  await expect.poll(() => page.evaluate(() => Object.keys(localStorage).filter((key) => key.startsWith("nodo.offline")))).toEqual([]);
+  await page.goto("/offline");
+  await expect(page.getByText(/No hay una copia vigente/)).toBeVisible();
+});
 test("una copia vencida o una denegación HTTP deja de mostrar el plan", async ({ page }) => {
   await login(page, "athlete-demo@example.com");
   await page.goto("/athlete/today");

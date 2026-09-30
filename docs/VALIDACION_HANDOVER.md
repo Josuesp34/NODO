@@ -4,7 +4,7 @@ Fecha: 29-09-2026. Esta evidencia se completa después de ejecutar los checks y 
 
 ## Evidencia actual
 
-- Backend integrado: **58 pruebas aprobadas**, Ruff check/format y `pip check` aprobados. Incluye revocación efectiva en asistentes/recomendaciones/export y bootstrap seguro del primer administrador por job.
+- Backend integrado: **59 pruebas aprobadas**, Ruff check/format y `pip check` aprobados. Incluye revocación efectiva en asistentes/recomendaciones/export y bootstrap seguro del primer administrador por job, con regresión que impide imprimir secretos ante fallas de configuración.
 - PWA integrada: **34 pruebas aprobadas**, typecheck de los workspaces y build de producción de 37 rutas aprobados. Incluye renovación de sesión, IAM Cloud Run, validación de origen y cuerpos acotados. Expo sale del workspace activo según ADR 0003 y conserva su código de referencia.
 - Prueba HTTP de las protecciones BFF: 18 solicitudes maliciosas rechazadas sin llamadas backend y seis endpoints legítimos aceptados en un entorno sintético.
 - Terraform 1.13.3: formato y validación staging/prod aprobados; no se ejecutó plan/apply.

@@ -1,4 +1,8 @@
 import asyncio
+import os
+import subprocess
+import sys
+from pathlib import Path
 
 import pytest
 from sqlalchemy import func, select
@@ -43,3 +47,24 @@ def test_bootstrap_requires_explicit_job_confirmation_before_credentials(monkeyp
     monkeypatch.delenv("NODO_BOOTSTRAP_PASSWORD", raising=False)
     with pytest.raises(ValueError, match="confirmación explícita"):
         asyncio.run(run())
+
+
+def test_bootstrap_configuration_failure_does_not_print_secret_inputs(tmp_path):
+    synthetic_secret = "synthetic-bootstrap-secret-must-not-appear"
+    env = {
+        "PATH": os.environ.get("PATH", ""),
+        "PYTHONPATH": str(Path(__file__).resolve().parents[2]),
+        "NODO_BOOTSTRAP_CONFIRM": "CREATE-FIRST-ADMIN",
+        "NODO_BOOTSTRAP_EMAIL": "admin-demo@example.com",
+        "NODO_BOOTSTRAP_PASSWORD": "Synthetic-admin-password",
+        "NODO_BOOTSTRAP_FIRST_NAME": "Demo",
+        "NODO_BOOTSTRAP_LAST_NAME": "Admin",
+        "RESEND_API_KEY": synthetic_secret,
+    }
+    # A clean cwd prevents a developer .env from hiding missing DATABASE_URL.
+    result = subprocess.run(
+        [sys.executable, "-m", "app.bootstrap_admin"], cwd=tmp_path, env=env, capture_output=True, text=True, timeout=30
+    )
+    output = result.stdout + result.stderr
+    assert result.returncode != 0 and "Bootstrap fallido" in output
+    assert synthetic_secret not in output and "Traceback" not in output

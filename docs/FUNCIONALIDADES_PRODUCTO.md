@@ -73,7 +73,7 @@ Por eso la carga manual de FIT es el camino funcional del piloto. La pantalla no
 
 ## Evidencia local vigente
 
-- backend: 58 pruebas y `ruff check` verdes;
+- backend: 59 pruebas y Ruff check/format verdes;
 - PWA: typecheck, 34 pruebas y build Next de 37 páginas estáticas/rutas dinámicas;
 - PostgreSQL 16: migraciones 0001→0005, `alembic check`, downgrade base y upgrade head comprobados localmente; E2E coach → atleta comprobado previamente;
 - Docker API/PWA y Terraform staging/prod validados localmente;

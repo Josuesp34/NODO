@@ -8,8 +8,6 @@ from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas import CoachRegistration
-from app.core.database import async_session_maker
-from app.core.security import hash_password
 from app.infrastructure.database.models import User
 from app.infrastructure.database.models.product import Organization, OrganizationMembership, UserRoleAssignment
 from app.infrastructure.database.models.user import UserRole
@@ -17,6 +15,8 @@ from app.services.audit import add_audit
 
 
 async def create_first_admin(db: AsyncSession, payload: CoachRegistration) -> int:
+    from app.core.security import hash_password
+
     if db.bind and db.bind.dialect.name == "postgresql":
         # Serialize competing one-off jobs; do not silently create two first administrators.
         await db.execute(text("SELECT pg_advisory_xact_lock(781304901)"))
@@ -58,6 +58,10 @@ async def run() -> None:
         last_name=os.environ["NODO_BOOTSTRAP_LAST_NAME"],
         timezone=os.environ.get("NODO_BOOTSTRAP_TIMEZONE", "UTC"),
     )
+    # Settings/engine initialization can fail with secret-bearing validation inputs.
+    # Keep these imports inside the protected entrypoint rather than module import time.
+    from app.core.database import async_session_maker
+
     async with async_session_maker() as db:
         await create_first_admin(db, payload)
     print("Bootstrap del primer administrador completado. No se imprimen credenciales.")

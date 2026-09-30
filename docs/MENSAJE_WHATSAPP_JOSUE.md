@@ -1,19 +1,18 @@
 # Mensaje para Josué por WhatsApp
 
-Borrador para que Brandon lo copie y envíe. No se ha enviado ningún mensaje.
+Borrador actualizado el 30-09-2026 para que Brandon lo copie. No se ha enviado.
+El candidato `v0.5.0-rc.1` sigue en ejecución; al publicarlo, actualizar la referencia con la evidencia final.
 
-> Josué, ya dejé los avances de NODO publicados y el plan para hacer el handover.
+> Josué, avancé NODO con la PWA de coach y atleta, calendario, FIT, historial y comparación, molestias, propuestas y ambos chats conectados al servidor. También dejé en código OAuth de Intervals, el adaptador de IA, notificaciones Push, privacidad/retención y administración de cupos.
 >
-> Avancé la PWA única para coach y atleta, acceso/roles, calendario y publicación de sesiones, carga FIT, check-ins, molestias, grupos y propuestas. También dejé correo/recuperación en código, infraestructura GCP y las guías de operación; corregí problemas de seguridad y despliegue antes de subirlo.
+> Estoy cerrando la integración, las pruebas y la versión v0.5.0-rc.1 en GitHub. Dejé una demo con datos ficticios y el plan de entrega para revisar juntos lo que hice y lo que falta.
 >
-> Estamos organizando el cierre para resolver de nuestro lado el desarrollo y las pruebas: historial/comparación, pantallas pendientes, ambos chats, conectores reales y notificaciones. También prepararemos la instalación y operación y, con los accesos correspondientes, haremos la configuración y el despliegue. Todo eso sigue siendo trabajo por ejecutar; producción, IA e Intervals reales todavía no están verificados.
+> Queda activar y verificar infraestructura, dominio/correo, Intervals, IA y Push con cuentas y dispositivos autorizados, además de backups, costos y documentos legales. Por la instrucción actual, no vamos a crear ni modificar ni desplegar nada en Google Cloud; te dejo la configuración y los pasos preparados. Vibe Conversa queda fuera de este proyecto.
 >
-> Yo tampoco tengo definidos el proyecto GCP, dominio, cuenta de correo, app OAuth de Intervals ni las condiciones finales de IA. De tu lado necesitamos coordinar qué existe, propietarios, permisos y decisiones pendientes. Dejaremos propuestas y guiones preparados para reducir esa gestión. La autorización para subir a producción ya está dada.
+> De tu lado necesitamos coordinar propietarios/accesos y hacer la sesión de recepción. Las integraciones tienen código y pruebas controladas; todavía no las presento como operativas en producción.
 >
-> El objetivo es entregarte el producto con el trabajo técnico resuelto y hacer una sesión para revisar el recorrido coach → atleta y que recibas la operación. Dejé el plan completo con el orden y la evidencia que necesitamos para cerrar cada punto.
+> Handover y pendientes: https://github.com/Josuesp34/NODO/blob/main/docs/HANDOVER_JOSUE.md
 >
-> Versión y evidencia: https://github.com/Josuesp34/NODO/releases/tag/v0.4.0-rc.1
->
-> Plan actualizado: https://github.com/Josuesp34/NODO/blob/main/docs/HANDOVER_JOSUE.md
->
-> Plan para reducir tu trabajo: https://github.com/Josuesp34/NODO/blob/main/docs/PLAN_CIERRE_PRE_HANDOVER.md
+> Versión y pruebas confirmadas: https://github.com/Josuesp34/NODO/blob/main/docs/VALIDACION_HANDOVER.md
+
+Revisar que los documentos y el candidato estén publicados antes de enviar. No adjuntar claves, `.env`, tokens, credenciales de demo ni datos de atletas.

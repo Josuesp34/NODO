@@ -1,82 +1,52 @@
 # Funcionalidades actuales de NODO
 
-Actualizado: 29 de septiembre de 2026.
+Actualizado: 30 de septiembre de 2026. **Candidato `v0.5.0-rc.1` en ejecución**, sin declaración de publicación o producción activa. Este inventario describe el código integrado y el cierre en curso. Los resultados finales del SHA, CI, E2E y release se registran en [VALIDACION_HANDOVER.md](VALIDACION_HANDOVER.md).
 
-Este documento es el inventario funcional vigente. Distingue una función operativa de una simulación, una integración parcial y una capacidad todavía pendiente. La referencia ejecutable sigue siendo OpenAPI en `/docs` y las pruebas del repositorio.
+“Implementado” describe código consumible por API/PWA; “probado localmente” exige evidencia sintética; “operativo externo” exige proveedor, despliegue o dispositivo reales. Una prueba con transporte HTTP interceptado no acredita recepción ni importación real.
 
-## Estados
+**Restricción vigente:** no crear, modificar ni desplegar recursos Google Cloud. Código/GitHub siguen autorizados. Josué recibe IaC y runbooks para activar posteriormente; Vibe Conversa queda fuera.
 
-- **Funcional:** existe código consumido por la PWA o API, con prueba local verificable.
-- **Funcional con operación manual:** sirve para el piloto, pero requiere una acción humana fuera de NODO.
-- **Simulado:** valida permisos, datos y experiencia sin llamar a un proveedor externo.
-- **Parcial:** existe una parte del contrato, pero falta un recorrido necesario para usuarios reales.
-- **Pendiente:** no debe ofrecerse como disponible.
+## Inventario
 
-## Inventario por área
+| Área | Implementación actual | Prueba local / límite | Validación externa pendiente |
+| --- | --- | --- | --- |
+| Pública y sesión | Landing, acceso/activación/recuperación, soporte, privacidad/términos borrador, BFF con cookies httpOnly, refresh/logout | Tests de transporte/origen/cuerpo, contratos PWA; cierre offline y navegador integrado en curso | HTTPS, dominio, dispositivos y aprobación de textos legales |
+| Identidad | Roles múltiples, capacidades, organizaciones/membresías/asignaciones, invitación/revocación | Pruebas de aislamiento, rol actual y acceso tras revocar | Accesos nominales y recepción de Josué |
+| Bootstrap | Primer administrador por job explícito, idempotente, auditado, sin habilitar registro HTTP productivo | Pruebas de creación, repetición y errores sin secretos | Ejecutar con secretos del entorno activado por Josué |
+| Planificación | Bloques, sesiones/pasos/repeticiones/objetivos, CAS y publicación idempotente, Hoy/Semana/detalle atleta | Conflictos, versión publicada y permisos probados; E2E final en curso | Recorrido HTTPS y dispositivos |
+| Perfil y contexto | Perfil deportivo versionado, disciplinas/parámetros/disponibilidad, competencias/prioridad, observaciones y check-in | API/PWA y pruebas de producto; fuente/vigencia y datos insuficientes | Validación de uso con participantes consentidos |
+| Molestias/revisión | Alta/evolución, historial, bandeja, decisión/seguimiento y reapertura | Prioridad visible y separación de cierre/decisión; no diagnóstico | Recepción del flujo por equipo piloto |
+| FIT | Carga autenticada, hash por atleta, laps/telemetría, auditoría y recálculo en cola | Una sola sesión, máximo 10 MiB; pruebas duplicados/acceso/fechas | Archivos consentidos de dispositivos soportados |
+| Actividades/comparación | Historial paginado, detalle, vínculo editable con versión, comparación determinista por disciplina y día local | Laps sólo si alineación compatible; triatlón sin segmentación comparable; falta de datos no es incumplimiento | Rendimiento cloud y datos reales consentidos |
+| Grupos/plantillas/propuestas | Miembros/excepciones, plantillas editables y aplicación idempotente, evidencia/diff y decisión de propuestas | Permisos, asignación vigente, base obsoleta y doble aplicación protegidos | Recepción con equipo piloto |
+| Ambos asistentes | Chats persistidos coach/atleta, listado/historial, herramientas/citas autorizadas, previews/confirmaciones, streaming/cancelación y replay | Simulador explícito para demo; HTTP Vertex controlado; no guardan/devuelven respuesta tras revocación durante consulta | Modelo/región/condiciones y evaluación real aprobados |
+| Uso IA | Reservas y límites por usuario/organización, tokens y estimación configurable de costo; estado servidor | Precios configurados, cuota y concurrencia probados; panel agregado en cierre de producto | Tarifa/consumo real contrastados, presupuesto y operación |
+| Intervals.icu | OAuth/state de un uso vinculado a sesión, cifrado, callback, estado UI, webhook/cola, backfill, sync/reconexión/desconexión | HTTP interceptado, scopes mínimos de lectura, dedupe y revocación durable; no refresh token inventado | App aprobada, callback, fuente permitida y cuenta consentida; importación real |
+| Correo | Resend en outbox cifrado, invitación/recuperación de un uso, revocación de sesiones, revalidación de entrega | Transporte simulado y pruebas de token/sesión; aceptación en cola no es recepción | Dominio/remitente, cuenta/secretos, entrega/bounce reales |
+| Push | Preferencias por categoría, zona/silencio, suscripciones cifradas, cola/dedupe, payload mínimo, baja y endpoints vencidos | pywebpush real con HTTP interceptado; plazo opcional cancela recordatorios obsoletos; eventos/reminders en integración | VAPID/HTTPS y recepción/baja en teléfono consentido |
+| Precompetencia | Escenarios con supuestos visibles y sin ajuste médico automático | Implementación y pruebas en cierre del carril producto; no aceptado aún | Revisión de uso del equipo y datos consentidos |
+| Privacidad | Consentimiento por finalidad, revocación, exportación propia y borrado/desidentificación con relaciones FK | PostgreSQL/SQLite: protege chats/resultados de atleta revocado, conserva datos ajenos y limpieza durable; no exporta secretos | Aviso definitivo, base/plazo financieros y política de backups |
+| Retención/archivos | Job periódico deduplicado, borrado temporal de fuentes/derivados/chats/outbox y archivos; adaptadores local/REST GCS | Limpieza local probada; trabajos externos conservan reintentos; backups no se reescriben | Borrado remoto/restauración y retención real tras activación de Josué |
+| Comercial | Catálogos autorizados, planes/suscripciones/pagos manuales, cupos y suspensión | Carrera real PostgreSQL y aislamiento; sin pasarela, facturación ni precio inventado | Precio/soporte/condiciones y responsables de negocio |
+| Worker/calidad | PostgreSQL persistente, claims/lease/heartbeat, reintentos/CAS; corpus 70 × 12 semanas y benchmark HTTP autenticado | Suite, migraciones, reinicio y carga locales; resultados exactos en validación final | Cloud bajo carga definida, alertas y dispositivos |
+| Plataforma | Terraform staging/prod, Cloud Run/SQL, Storage/secretos, WIF, CI, backup/rollback y operación | Validación estática, pruebas/builds y preflight; no aplica ni despliega Cloud | Josué identifica recursos/cuentas y activa, prueba restore/monitoreo/costos |
 
-| Área | Funcionalidad | Estado | Evidencia y límites |
-|---|---|---|---|
-| Pública | Landing, acceso, activación, recuperación, soporte, privacidad, términos y fallback offline | Funcional en código | Rutas Next, build PWA y QA visual local; recuperación exige correo real |
-| Sesión | BFF con cookies `httpOnly`, refresh rotado, logout y protección de rutas | Funcional | Pruebas PWA y backend; HTTPS real pendiente del despliegue |
-| Identidad | Coach, atleta, superusuario de bootstrap, roles múltiples y capacidades | Funcional | Acceso cruzado y normalización de capacidades probados |
-| Bootstrap | Job explícito para el primer administrador, idempotente y auditado | Funcional en código/pruebas | Sin registro development público; ejecución en producción pendiente |
-| Equipo | Invitación, activación y revocación de asignación coach-atleta | Funcional local; correo pendiente de activar | En producción la API encola el código cifrado con Resend y no lo devuelve; falta dominio, secretos y envío real. Desarrollo conserva entrega manual |
-| Correo/recuperación | Resend en cola, recuperación de contraseña y revocación de sesiones | Funcional en código; no operativo aún | Pruebas locales con transporte simulado; sin dominio verificado ni email real. Ver `RESEND_CONFIGURACION.md` |
-| Organizaciones | Organización, membresías, asignaciones y cupos por plan | Funcional | Persistencia y límite comercial en backend |
-| Planificación | Bloques, sesiones estructuradas, varias sesiones por día, edición CAS y publicación idempotente | Funcional | E2E local coach → publicación → atleta |
-| Experiencia atleta | Hoy, semana y detalle de sesión publicada | Funcional | La persona sólo recibe versiones publicadas |
-| Perfil | Perfil deportivo versionado y lectura coach/atleta | Funcional | Conserva fuente y vigencia |
-| Contexto | Competencias, observaciones y check-in diario | Funcional en API; check-in y perfil consumidos por PWA | No toda captura administrativa tiene pantalla dedicada |
-| Molestias | Alta, historial, actualizaciones y creación de revisión | Funcional | No diagnostica ni reemplaza atención clínica |
-| Revisión | Bandeja y decisión con nota | Funcional | Prioridades con razón visible; no se ocultan molestias |
-| FIT | Carga autenticada, deduplicación, laps, telemetría, auditoría y job de carga diaria | Funcional | Archivo de una sola sesión, máximo 10 MiB; guía en `GUIA_CARGA_FIT_E_INTERVALS.md` |
-| Actividades | Historial básico por atleta | Funcional en API | La PWA muestra el resultado de importación; el historial completo aún no tiene pantalla propia |
-| Grupos | Crear, listar y gestionar miembros | Funcional | Restringido al coach autenticado |
-| Plantillas | Crear, listar y aplicar de forma idempotente | Funcional | Edición avanzada de plantillas no disponible |
-| Recomendaciones | Crear, listar, aprobar/rechazar y proteger contra plan obsoleto | Funcional | Requiere una sesión borrador válida |
-| Privacidad | Consentimiento versionado, historial, revocación, exportación y desidentificación | Funcional | Revisión legal y retención de producción pendientes |
-| Comercial | Planes, suscripciones, cupos y pagos administrados | Funcional para superusuario | No procesa tarjetas, no factura y no inventa precios |
-| Cola | Jobs persistentes, lease, reintentos y deduplicación | Funcional en código/pruebas | Worker desplegado y métricas de cola pendientes |
-| IA coach | API de conversación simulada, citas, vista previa y confirmación para crear borrador | Simulado | La pantalla Copiloto usa una simulación local; no llama a un modelo real |
-| IA atleta | API simulada con alcance propio y confirmación para registrar molestia | Simulado en API | No existe aún una pantalla de chat para atleta |
-| IA real | Adaptador y modelo externo | Pendiente | No hay proveedor implementado, credencial, modelo ni evaluación aprobada |
-| Intervals.icu | Consulta de estado, simulación y revocación local | Simulado/parcial | No existe OAuth real completo, callback, webhook ni backfill |
-| Notificaciones | Pantalla honesta de estado | Pendiente | Faltan preferencias, suscripción Web Push y envío |
-| Plataforma | Terraform GCP, Cloud Run, Cloud SQL, Storage, Secret Manager, WIF, budgets y runbooks | Preparada en código | No hay `plan/apply`, recursos, URL HTTPS ni evidencia pública |
+## IA: configuración y alcance
 
-## Estado exacto de los modelos de IA
+La demo conserva `AI_PROVIDER=simulated`: respuesta determinista sin red externa. El adaptador `vertex` existe con ADC, proyecto/región/modelo configurables y salida validada. No se activa por tener variables vacías; requiere consentimiento, configuración, presupuesto positivo y evaluación real. `AI_API_KEY` genérica no sustituye autenticación ADC.
 
-La configuración activa por defecto es:
+Las herramientas leen perfil, calendario, actividades, comparación, observaciones, resumen, sincronización, check-ins, molestias, revisión, grupos y calidad con autorización del servidor. Las métricas provienen de cálculos deterministas. Una propuesta requiere preview y confirmación vigente; el asistente no publica planes ni autoriza entrenamiento.
 
-```text
-AI_PROVIDER=simulated
-AI_API_KEY=no configurada
-AI_MODEL=no configurado
-```
+La procedencia interna registra todos los atletas usados en contexto e historial, aunque el modelo omita citarlos. Se revalida tras el proveedor, en historial, replay, exportación y borrado. Un dato enviado cuando existía consentimiento no puede retirarse del proveedor por este control. No se guarda ni devuelve una respuesta tras revocación. El chat personal no se comparte íntegro con el coach.
 
-El proveedor `simulated` es determinista y no sale a internet. Sirve para validar autorización, citas, preview y confirmación humana. Si se cambia `AI_PROVIDER` a otro valor, la API exige una clave y después responde que el adaptador real todavía requiere validación: establecer variables no convierte la IA real en funcional.
+## Intervals: contrato preparado y verificación pendiente
 
-Antes de ofrecer IA real faltan, como mínimo:
+El conector real es de lectura y exige una app aprobada. Importa sólo fuentes y campos admitidos, conserva calidad/procedencia, respeta límites y reconecta ante un token inválido. La API oficial no documenta refresh token: no se inventa una renovación. Un token emitido que pierde autorización antes de persistirse queda cifrado en limpieza durable; el estado OAuth consumido no puede reutilizarse.
 
-1. elegir proveedor, modelo, región, retención y presupuesto;
-2. implementar el adaptador servidor-a-servidor;
-3. conectar las pantallas al API de asistentes;
-4. ejecutar la suite de `EVALUACIONES_LLM.md`;
-5. aprobar seguridad, costo, latencia y comportamiento;
-6. conservar siempre los flujos manuales.
+FIT manual sigue disponible. Los handlers legacy de alta/baja simulada se cierran en integración para no borrar un token real mediante el recorrido anterior. La pantalla confirma el estado del servidor; una simulación o configuración incompleta no se presenta como conexión real.
 
-## Estado exacto de Intervals.icu
+## Evidencia y cierre
 
-Hoy NODO permite consultar y persistir un estado `simulated`, solicitar modo real y revocar localmente. El modo real devuelve `INTERVALS_CONFIGURATION_REQUIRED` porque no hay credenciales configuradas. Aun con credenciales, el recorrido seguiría incompleto: faltan inicio OAuth con `state`, callback, intercambio y cifrado del token, revocación remota, webhooks verificados, backfill y sincronización. La documentación vigente del proveedor no publica refresh token; ante un token inválido corresponde marcar la conexión caída y pedir reconexión, no inventar una renovación.
+Las pruebas de cada paquete están en el repositorio; [VALIDACION_PRIVACIDAD_PUSH.md](VALIDACION_PRIVACIDAD_PUSH.md) documenta el ciclo SQLite/PostgreSQL y correcciones de procedencia/OAuth. [QA_CORPUS_70_ATLETAS.md](QA_CORPUS_70_ATLETAS.md) describe corpus y medición reproducibles. El cierre de integración consolida suite, builds, Alembic, E2E, benchmark, auditorías y CI del SHA exacto en [VALIDACION_HANDOVER.md](VALIDACION_HANDOVER.md); no se reutilizan cifras del candidato anterior como resultado de éste.
 
-Por eso la carga manual de FIT es el camino funcional del piloto. La pantalla no debe presentar Intervals.icu como “conectado” hasta que el servidor confirme una conexión real.
-
-## Evidencia local vigente
-
-- backend: 59 pruebas y Ruff check/format verdes;
-- PWA: typecheck, 34 pruebas y build Next de 37 páginas estáticas/rutas dinámicas;
-- PostgreSQL 16: migraciones 0001→0005, `alembic check`, downgrade base y upgrade head comprobados localmente; E2E coach → atleta comprobado previamente;
-- Docker API/PWA y Terraform staging/prod validados localmente;
-- sin credenciales reales de IA o Intervals.icu en el workspace.
-
-Estas evidencias no sustituyen CI remoto, staging, URL HTTPS, proveedores reales, dispositivos, restore drill, pentest o aprobación legal/comercial.
+Recepción Push, correo, OAuth/IA reales, HTTPS, restore, costos cloud, teléfonos físicos, aceptación de Josué y aprobaciones legales/comerciales conservan su estado pendiente. [MATRIZ_REQUISITOS.md](MATRIZ_REQUISITOS.md) permite cerrar cada requisito con su evidencia correspondiente.

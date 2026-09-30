@@ -1,139 +1,85 @@
 # Handover de NODO con Josué
 
-Fecha: 29 de septiembre de 2026. Responsable de entrega: Brandon.
-Actualización de reparto: 30 de septiembre de 2026.
+Actualizado: 30 de septiembre de 2026. Responsable de entrega: Brandon.
+Estado: **candidato `v0.5.0-rc.1` en ejecución; cierre de integración y publicación pendiente**.
 
-**Objetivo:** entregar una versión compartida y reproducible del código, revisar con Josué lo que funciona y cerrar el recorrido hasta producción con evidencia. Brandon autorizó el PR completo, integración y despliegue; esa autorización ya está dada. La apertura a atletas reales conserva los criterios de `LANZAMIENTO.md`.
+El objetivo es entregar el código, la demo reproducible y una lista concreta de activación para Josué. El candidato incorpora producto, proveedores, privacidad y operación; la revisión final, las pruebas de la mezcla y el CI del SHA final se registran en [VALIDACION_HANDOVER.md](VALIDACION_HANDOVER.md). No equivale a producción activa ni a recepción aceptada por Josué.
 
-**Estado:** código integrado y versión candidata publicada; proveedores reales y producción pendientes. Brandon no dispone de las respuestas sobre GCP, dominio, correo, OAuth e IA. Josué coordina la resolución de esos datos, accesos y decisiones con sus propietarios. Nuestro equipo asume el desarrollo, pruebas, configuración y despliegue que puedan ejecutarse con los permisos correspondientes para reducir el trabajo técnico que recibe Josué. La recepción y aceptación de Josué aún deben registrarse.
+**Instrucción vigente de Brandon:** no crear, modificar ni desplegar recursos en Google Cloud. La autorización de código, commits, PRs, integración y versiones GitHub sigue vigente. Josué recibe Terraform, configuración y runbooks para activar la plataforma posteriormente. **Vibe Conversa queda fuera de NODO**. Las autorizaciones de despliegue de documentos históricos quedan sustituidas por esta restricción.
 
-El reparto y la secuencia detallados están en [PLAN_CIERRE_PRE_HANDOVER.md](PLAN_CIERRE_PRE_HANDOVER.md). Es un plan de ejecución; no marca sus tareas nuevas como terminadas.
+## Qué se entrega y qué falta
 
-## 1. Qué se entrega
+| Área | Código preparado y pruebas locales | Activación o comprobación pendiente |
+| --- | --- | --- |
+| PWA e identidad | App única coach/atleta, multirol, organizaciones, sesión BFF, invitación/recuperación, bootstrap admin por job | HTTPS, dominio, identidad operativa y recepción real de correo |
+| Producto manual | Calendario, sesiones estructuradas, CAS/publicación, perfiles/competencias, check-ins, molestias/revisión, grupos/plantillas y propuestas | Demo de recepción de Josué y QA de dispositivos físicos |
+| Datos deportivos | FIT, historial/detalle paginado, vínculo editable a sesión, comparación determinista, fuente/calidad y días locales | Probar con datos consentidos; no asumir equivalencia de unidades ni cumplimiento cuando faltan datos |
+| Intervals.icu | Inicio/callback OAuth, state de un uso, scopes de lectura, tokens cifrados, webhook, backfill/sync, reconexión y revocación durable | App aprobada, callback/dominio, cuenta consentida e importación real |
+| Asistentes | Chats persistidos coach/atleta, herramientas autorizadas, citas, preview/confirmación, streaming/cancelación, límites/uso y adaptador Vertex | Modelo/región/condiciones/costo aprobados y evaluación con proveedor real; demo usa simulador explícito |
+| Notificaciones | Preferencias, zona/silencio, suscripciones cifradas, Web Push en cola, dedupe, baja/expiración y payload mínimo | Claves VAPID, HTTPS y recepción en dispositivo consentido; eventos/reminders aún pasan cierre integrado |
+| Privacidad y comercial | Consentimiento por finalidad, exportación/borrado FK, limpieza durable de archivos/tokens/chats, retención periódica, cupos/suspensión y administración por entidades autorizadas | Aviso/retención legal, política de backups, soporte y precio; cobros administrados, sin pasarela |
+| Calidad/plataforma | Corpus sintético 70 × 12 semanas, benchmark autenticado, E2E, PostgreSQL, worker con lease, IaC/CI y runbooks | Cierre de pruebas/CI final, dispositivos, rendimiento cloud, restauración y operación reales |
 
-| Entrega | Qué existe | Límite actual |
-|---|---|---|
-| PWA única | Landing, acceso, activación, módulos coach/atleta, BFF, calendario, hoy/semana y detalle | Validación física y HTTPS desplegado pendientes |
-| Identidad y planificación | Multirol, organizaciones, invitaciones, sesiones estructuradas, publicación y versiones | Job bootstrap seguro implementado; falta ejecutarlo en el entorno real |
-| Datos deportivos | FIT autenticado, dueño obligatorio, deduplicación, laps/telemetría y cola persistente | Una sesión y hasta 10 MiB; Intervals no sincroniza realmente |
-| Seguimiento | Perfil, check-in, molestias, bandeja, grupos, plantillas y propuestas aprobables | Hay contratos API sin toda su interfaz final |
-| Privacidad/comercial | Consentimientos, exportación/desidentificación, cupos y cobros administrados | Legal, retención efectiva, soporte y precio por confirmar; no procesa tarjetas |
-| Correo | Resend, cola cifrada, invitación y recuperación de un solo uso | Ningún envío real verificado; falta dominio/cuenta/secretos |
-| Asistentes | Simuladores con contexto, citas, preview y confirmaciones | Falta proveedor real y conexión completa de las pantallas; chat atleta pendiente |
-| Plataforma | Terraform staging/prod, Cloud Run/SQL, secretos, WIF, workflows y runbooks | Recursos, costo real, restauración y monitoreo no verificados |
+El inventario detallado está en [FUNCIONALIDADES_PRODUCTO.md](FUNCIONALIDADES_PRODUCTO.md); la matriz separa implementación, prueba local y validación externa en [MATRIZ_REQUISITOS.md](MATRIZ_REQUISITOS.md). Escenarios precompetencia y panel de costos agregados están en el cierre de producto; no declararlos aceptados antes de su evidencia integrada.
 
-Inventario preciso: [FUNCIONALIDADES_PRODUCTO.md](FUNCIONALIDADES_PRODUCTO.md). Trazabilidad: [MATRIZ_REQUISITOS.md](MATRIZ_REQUISITOS.md). Alcance completo: [PLAN_MAESTRO_NODO.md](PLAN_MAESTRO_NODO.md).
+## Versión y fuente de entrega
 
-## 2. Versión y revisión
+- Base histórica publicada: [`v0.4.0-rc.1`](https://github.com/Josuesp34/NODO/releases/tag/v0.4.0-rc.1).
+- Objetivo actual: **`v0.5.0-rc.1`, candidato en ejecución; todavía no se presenta como publicado**.
+- La rama de integración y los PRs del candidato se registran en [EJECUCION_ENTREGA.md](EJECUCION_ENTREGA.md). El cierre registra SHA, PRs, checks y tag exactos en [VALIDACION_HANDOVER.md](VALIDACION_HANDOVER.md).
+- Usar el tag publicado y confirmado en esa evidencia para entregar un snapshot. No utilizar una carpeta con cambios sin versionar, compartir `.env` ni copiar secretos por WhatsApp.
+- `frontend/apps/nodo-web` es la PWA activa. Lab y Expo conservan sus referencias; Expo no forma parte del workspace activo.
 
-La entrega incluye todos los avances locales de NODO y las correcciones de publicación/seguridad. La base anterior es `98f2a9b` en `feat/f0-higiene`; el código activo es la PWA `frontend/apps/nodo-web`. Lab y Expo se conservan como referencias.
+## Demo local para Josué
 
-- Rama de trabajo: `codex/handover-josue`.
-- Integración: PR completo a `dev`, después PR de release a `main`, sujeto a los checks y protecciones existentes.
-- Versión de entrega: [`v0.4.0-rc.1`](https://github.com/Josuesp34/NODO/releases/tag/v0.4.0-rc.1); identifica un candidato y no una aplicación operativa en producción.
-- PR completo: [#7](https://github.com/Josuesp34/NODO/pull/7). El estado de integración y la promoción a `main` se verifican en GitHub Release.
-- La evidencia final de SHA, PRs, CI y publicación se registra en [VALIDACION_HANDOVER.md](VALIDACION_HANDOVER.md) y en GitHub Release.
-- La versión de código conserva `v0.4.0-rc.1`. La [guía vigente en main](https://github.com/Josuesp34/NODO/blob/main/docs/HANDOVER_JOSUE.md) incorpora las aclaraciones posteriores de responsabilidades; el tag conserva su snapshot original.
-- No utilizar un ZIP que omita archivos nuevos, `.env` compartidos ni una carpeta con cambios sin versionar como fuente de despliegue.
-
-## 3. Arranque reproducible para Josué
-
-Requisitos: Git, Python 3.11 o 3.12, Node 22 y Docker Desktop activo. En Windows usar `.venv\Scripts\python.exe`, `.venv\Scripts\alembic.exe` y `.venv\Scripts\uvicorn.exe` en lugar de los ejecutables de `.venv/bin`.
+Requisitos: Git, Python 3 y Docker Desktop con Compose. La demo utiliza únicamente cuentas sintéticas y puertos de loopback. Desde el snapshot confirmado:
 
 ```bash
 git clone https://github.com/Josuesp34/NODO.git
 cd NODO
-git checkout v0.4.0-rc.1
-cd backend/api
-python3 -m venv .venv
-.venv/bin/python -m pip install --upgrade pip==26.2.0
-.venv/bin/python -m pip install -r requirements-dev.txt
-cp .env.example .env
+# Cambiar al tag confirmado en VALIDACION_HANDOVER.md cuando se publique.
+python3 ops/demo.py up
+python3 ops/demo.py status
 ```
 
-Editar el `.env` exclusivamente local: contraseña propia, ambas URLs de base consistentes, `ENVIRONMENT=development` y `ALLOW_COACH_REGISTRATION=true` sólo durante la demo. Mantener superusuario deshabilitado. La IA debe permanecer `simulated` y no configurar Resend para esta demo. Nunca compartir este archivo por WhatsApp ni Git.
+En Windows, usar `py` en lugar de `python3`. El script compila API/PWA, inicia PostgreSQL, ejecuta Alembic, comprueba salud, inicia worker y siembra cuentas idempotentes. La URL predeterminada es `http://127.0.0.1:3300`. Las credenciales sintéticas se generan en `.local/nodo-demo/credentials.json`, con permisos locales; nunca enviarlas como configuración productiva. API/OpenAPI local: `http://127.0.0.1:8800/docs`.
 
-Usar una **base nueva y un proyecto Compose dedicado**; el puerto indicado debe estar libre y coincidir con `DATABASE_URL`. Una base heredada se respalda y revisa antes: la migración rechaza actividades sin dueño y no asigna atletas por suposición.
+La demo conserva una base aislada en `.local/nodo-demo/postgres`. Los puertos predeterminados 55432/8800/3300 deben estar libres; `NODO_DEMO_DB_PORT`, `NODO_DEMO_API_PORT` y `NODO_DEMO_WEB_PORT` permiten cambiarlos antes del primer arranque. Detener sin borrar datos:
 
 ```bash
-docker compose -p nodo-handover up -d postgres
-.venv/bin/alembic upgrade head
-.venv/bin/alembic check
-.venv/bin/uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+python3 ops/demo.py stop
 ```
 
-Otra terminal, desde `backend/api`, ejecuta `.venv/bin/python -m app.services.jobs`. Desde `frontend`:
+No exponer esta demo a internet ni reutilizar sus claves en producción. El estado de la prueba de clon limpio y los comandos de recuperación se registran en la guía de arranque y validación mantenida por integración. La existencia del script no sustituye su comprobación final.
 
-```bash
-npm ci
-cp .env.example apps/nodo-web/.env.local
-npm run dev:web
-```
+## Sesión de recepción (45–60 minutos)
 
-Abrir `http://localhost:3000`; API/OpenAPI en `http://127.0.0.1:8000/docs`. Crear coach sintético desde `POST /api/v1/auth/coaches` en OpenAPI con correo `coach-demo@example.com`, nombre Demo Coach, zona `America/Mexico_City` y contraseña local de al menos 12 caracteres. No existe alta pública productiva; no habilitar development en una URL pública.
+- [ ] Josué clona el snapshot confirmado y levanta la demo sin archivos personales de Brandon.
+- [ ] Entra como coach, atleta, persona sin coach y cuenta multirol; comprueba login/logout y permisos.
+- [ ] Crea/edita/publica sesión; atleta ve sólo la versión publicada. Una edición obsoleta responde conflicto.
+- [ ] Importa FIT sintético repetido, revisa historial/detalle y comparación; un duplicado no crea otra actividad.
+- [ ] Registra check-in/molestia, revisa evolución y decide con motivo; prueba una propuesta obsoleta.
+- [ ] Usa ambos chats en modo simulado explícito, abre citas y confirma un borrador. Revoca asignación/consentimiento y comprueba historial, replay y exportación protegidos.
+- [ ] Revisa preferencias Push, exportación/borrado y administración sintética. No confundir transporte HTTP de prueba con recepción física.
+- [ ] Revisa escenarios/costos/reminders únicamente si la validación integrada ya los identifica como cerrados.
+- [ ] Registra fecha, participantes, versión, resultado, pendientes y responsable. La recepción de Josué no está realizada aún.
 
-## 4. Demo y aceptación técnica conjunta (45–60 min)
+## Secuencia pendiente de activación con Josué
 
-- [ ] Josué clona la versión etiquetada y levanta una base nueva sin archivos personales de Brandon.
-- [ ] Coach entra, invita a `athlete-demo@example.com` y obtiene el código manual sólo en desarrollo.
-- [ ] Atleta activa la cuenta en ventana privada; ambos pueden iniciar/cerrar sesión.
-- [ ] Coach crea bloque y sesión estructurada, edita borrador y publica; atleta ve sólo la versión publicada en Hoy/Semana.
-- [ ] Publicación repetida y edición con versión antigua no duplican ni sobrescriben silenciosamente.
-- [ ] Atleta carga FIT sintético; repetir el archivo no crea otra actividad; el worker procesa el trabajo.
-- [ ] Atleta registra check-in/molestia; coach la revisa con motivo y decisión.
-- [ ] Verificar accesos cruzados denegados y que revocar la asignación corte también acceso de asistentes/recomendaciones.
-- [ ] Mostrar explícitamente qué está simulado: Intervals e IA. Correo y push no se presentan como entregados.
-- [ ] Registrar fecha, participantes, versión y resultado. Esta sesión todavía no está ejecutada ni aprobada por Josué.
+| Orden | Trabajo | Responsable | Evidencia de cierre |
+| --- | --- | --- | --- |
+| 1 | Terminar mezcla, demo, suite, E2E y CI; integrar dev/main y publicar candidato | Brandon/equipo de desarrollo | SHA, PRs, CI y tag exactos en VALIDACION_HANDOVER |
+| 2 | Confirmar cuenta/proyectos propios NODO, billing/créditos, región, dominio y permisos | Josué coordina propietarios | Inventario nominal y costos confirmados; Vibe fuera |
+| 3 | Configurar Terraform/WIF/Secret Manager, API/PWA privadas donde corresponde, worker/jobs y migraciones | Josué activa después de la entrega | Plan revisado, digests, ejecución de migración y HTTPS; esta ejecución no modifica Cloud |
+| 4 | Activar Resend, Intervals y modelo Vertex aprobado | Josué con propietarios de proveedores | Dominio verificado, correo recibido, importación/revocación consentidas y evaluación IA real |
+| 5 | Configurar VAPID y ejecutar Push/dispositivos, rendimiento y accesibilidad | Josué coordina cuenta/dispositivos consentidos | Recepción/baja, iOS/Android y resultados fechados |
+| 6 | Ejecutar backup/PITR, restore aislado, rollback, alertas y revisión de costos | Josué recibe/activa operación | RPO/RTO medidos, canales de alerta y accesos nominales |
+| 7 | Resolver aviso de privacidad/retención, precio, soporte y piloto | Responsables humanos coordinados por Josué | Checklist LANZAMIENTO completo y GO documentado |
 
-Para generar un FIT sintético fuera del repo, desde `backend/api`:
+La infraestructura se entrega preparada. **No ejecutar `terraform apply`, jobs remotos ni workflows de despliegue como parte de este cierre**. Configurar variables no prueba una integración real. Las condiciones y secretos de proveedores se transfieren por un canal seguro; el handover y WhatsApp contienen sólo estado y enlaces públicos.
 
-```bash
-.venv/bin/python - <<'PY'
-from pathlib import Path
-from tempfile import gettempdir
-import runpy
-fixture = runpy.run_path('tests/services/test_fit_parser.py')
-target = Path(gettempdir()) / 'nodo-handover-demo.fit'
-target.write_bytes(fixture['make_fit']())
-print(target)
-PY
-```
+## Cierre del handover
 
-## 5. Plan hasta producción
+La entrega técnica queda cerrada cuando el snapshot está publicado, sus checks son verificables, Josué reproduce la demo y los pendientes tienen responsable. La entrega operativa requiere además producción/proveedores, dispositivos, restauración, monitoreo, condiciones legales/comerciales y recepción registrados por separado.
 
-| Orden | Trabajo por cerrar | Responsable de seguimiento | Evidencia para cerrar |
-|---|---|---|---|
-| P0 · cerrado | Código completo integrado a `dev` y `main`; versión candidata publicada | Brandon | PRs #7/#8, tag `v0.4.0-rc.1` y CI del commit exacto aprobados |
-| P1 | Identificar o crear proyectos staging/prod; definir identidad, billing, región, estado Terraform y costo bruto/neto | Nosotros preparamos/ejecutamos; Josué coordina los datos y permisos faltantes | Inventario de NODO y presupuesto confirmado; no usar recursos de otros proyectos |
-| P2 | Provisionar base de plataforma, usuario PostgreSQL, secretos y bootstrap seguro del primer admin | Nosotros, con acceso autorizado | Plan aplicado, migración y login admin sin habilitar registro development |
-| P3 | Construir/escaneo de imágenes, configurar WIF/Environments y permisos GitHub; desplegar staging | Nosotros; propietario GitHub habilita lo que exija admin | Digests, permisos entre registros, jobs/worker activos y URL HTTPS |
-| P4 | Definir u obtener dominio, DNS, cuenta Resend y remitente; verificar y configurar secretos | Nosotros configuramos/verificamos; Josué coordina propiedad/cuentas/condiciones faltantes | SPF/DKIM/DMARC y recepción real de invitación/recuperación en cuenta autorizada |
-| P5 | Obtener app/cuenta OAuth aprobada de Intervals; implementar state/callback/cifrado, webhooks idempotentes, backfill/reconexión/revocación; conservar FIT | Nosotros implementamos/verificamos; Josué coordina propietario y aprobación externa | Importación real consentida, duplicados y revocación comprobados |
-| P6 | Definir propuesta de IA/modelo/región/retención/tope, coordinar aprobaciones aplicables e implementar adaptador real y ambos chats | Nosotros implementamos/evaluamos; responsables humanos deciden condiciones aplicables | Proveedor/configuración documentados, evaluaciones sintéticas, citas autorizadas, confirmación y flujos manuales |
-| P7 | Completar comparación prescrita/ejecutada, historial de actividades, chat atleta, pantallas administrativas y Web Push | Nosotros | Recorridos pendientes completos y notificación recibida en dispositivo consentido |
-| P8 | Validar 70 perfiles × 12 semanas, carga, privacidad, seguridad, renovación concurrente de sesiones, accesibilidad y teléfonos físicos | Nosotros automatizamos/corregimos; Brandon u otro tester autorizado realiza dispositivos; revisión especializada cuando aplique | Corpus versionado, métricas, hallazgos corregidos y validaciones fechadas |
-| P9 | Backups/PITR, restauración aislada, rollback, monitoreo, alertas, costos, guardia y soporte | Nosotros preparamos/verificamos; Josué recibe la operación | Restore medido, objetivos RPO/RTO, alertas de API/cola/correo y acceso operativo |
-| P10 | Promover exactamente los digests probados, migrar y verificar producción; autorización general ya recibida | Nosotros ejecutamos/verificamos con recursos identificados y acceso autorizado | URL HTTPS, SHA→CI→digest→revisión, E2E coach/atleta y pruebas reales |
-| P11 | Coordinar legal/consentimiento/retención, precio/soporte y selección del piloto con responsables de negocio/legal | Josué coordina; responsables humanos aprueban lo aplicable | Checklist `LANZAMIENTO.md` completo; GO para atletas reales |
-
-Los trabajos P4/P5/P6 pueden avanzar en paralelo al staging cuando existan sus datos externos. Las dependencias no se marcan cerradas sólo por configurar variables. IA e Intervals requieren código adicional además de credenciales.
-
-## 6. Datos y recursos por resolver por Josué
-
-No se asume que estos recursos existan ni que Brandon pueda entregar la configuración. Josué coordina con sus propietarios qué existe, quién concede acceso y las decisiones externas. Nosotros preparamos las propuestas/guiones y creamos o configuramos lo posible cuando existan esos permisos y condiciones. Registrar cada punto como `por definir`, `por crear`, `por configurar` o `verificado`, junto con responsable, siguiente acción y evidencia. La asignación de seguimiento no equivale a aceptación de Josué ni a aprobación de costos o términos de terceros.
-
-- [ ] Proyecto(s) GCP de NODO e identidad confirmada; cuenta de facturación/créditos y región.
-- [ ] Dominio de NODO y acceso DNS. Una URL `run.app` no verifica correo ni sustituye un dominio aprobado.
-- [ ] Cuenta propietaria y aprobación OAuth de Intervals; callback registrado y cuenta de prueba autorizada.
-- [ ] Resend con dominio verificado y remitente.
-- [ ] Proveedor/modelo IA, ubicación, tratamiento de datos y techo de gasto.
-- [ ] Accesos nominales de Josué y procedimiento de soporte.
-- [ ] Propietario GitHub: protecciones/revisores, Environments/WIF y Dependency Graph/permisos del review nativo. Las auditorías directas siguen siendo obligatorias.
-
-Secretos por Secret Manager o canal seguro; WhatsApp y Git reciben únicamente enlaces, identificadores no secretos y estado. Las preguntas anteriores quedan convertidas en este checklist para Josué, sin esperar respuestas inmediatas de Brandon. Mantener la autorización general de producción ya recibida; Josué coordina las decisiones puntuales de costo, términos o negocio que requieran aprobación.
-
-## 7. Cierre del handover
-
-**Entrega técnica:** código publicado, CI comprobado, instrucciones vigentes, demo reproducida por Josué y pendientes con responsables acordados. **Entrega operativa:** producción e integraciones reales verificadas, monitoreo/costos/restauración y accesos entregados. Registrar ambos resultados por separado.
-
-La comunicación lista para copiar está en [MENSAJE_WHATSAPP_JOSUE.md](MENSAJE_WHATSAPP_JOSUE.md). Runbooks: [OPERACION_GCP.md](OPERACION_GCP.md), [RUNBOOK_PRODUCCION.md](RUNBOOK_PRODUCCION.md), [RECUPERACION_DESASTRES.md](RECUPERACION_DESASTRES.md), [RESEND_CONFIGURACION.md](RESEND_CONFIGURACION.md) y [LANZAMIENTO.md](LANZAMIENTO.md).
+Plan: [PLAN_CIERRE_PRE_HANDOVER.md](PLAN_CIERRE_PRE_HANDOVER.md). Mensaje listo para copiar: [MENSAJE_WHATSAPP_JOSUE.md](MENSAJE_WHATSAPP_JOSUE.md). Runbooks: [OPERACION_GCP.md](OPERACION_GCP.md), [RUNBOOK_PRODUCCION.md](RUNBOOK_PRODUCCION.md), [RECUPERACION_DESASTRES.md](RECUPERACION_DESASTRES.md), [RESEND_CONFIGURACION.md](RESEND_CONFIGURACION.md) y [LANZAMIENTO.md](LANZAMIENTO.md).

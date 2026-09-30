@@ -6,6 +6,8 @@ x-api-environment: &api-environment
   AI_PROVIDER: simulated
   PUBLIC_APP_URL: http://127.0.0.1:${DEMO_WEB_PORT:-3300}
   WORKER_POLL_INTERVAL_SECONDS: "1"
+  STORAGE_BACKEND: local
+  STORAGE_LOCAL_PATH: /private-files
 
 services:
   postgres:
@@ -34,19 +36,32 @@ services:
   api:
     image: ${DEMO_API_IMAGE:?Usar python3 ops/demo.py up}
     environment: *api-environment
+    volumes:
+      - ./.local/nodo-demo/files:/private-files
     ports:
       - "127.0.0.1:${DEMO_API_PORT:-8800}:8000"
     depends_on:
       migrate:
+        condition: service_completed_successfully
+      storage-init:
         condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5)"]
       interval: 3s
       timeout: 6s
       retries: 30
+  storage-init:
+    image: ${DEMO_API_IMAGE}
+    user: root
+    command: ["python", "-c", "import os,pwd; user=pwd.getpwnam('apiuser'); os.chown('/private-files',user.pw_uid,user.pw_gid); os.chmod('/private-files',0o700)"]
+    volumes:
+      - ./.local/nodo-demo/files:/private-files
+
   worker:
     image: ${DEMO_API_IMAGE:?Usar python3 ops/demo.py up}
     environment: *api-environment
+    volumes:
+      - ./.local/nodo-demo/files:/private-files
     command: ["python", "-m", "app.services.jobs"]
     depends_on:
       api:

@@ -67,3 +67,48 @@ test("el BFF rechaza escrituras desde otro origen antes de la API", async ({ pag
   const identity = await page.request.get("/api/session/me");
   expect(identity.ok()).toBe(true);
 });
+
+test("el plan guardado funciona sin red y se elimina al salir o cambiar de cuenta", async ({ page, context }) => {
+  await login(page, "athlete-demo@example.com");
+  await page.goto("/athlete/today");
+  await expect(page.getByText("Rodaje de demostración", { exact: true }).first()).toBeVisible();
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
+  await context.setOffline(true);
+  await page.goto("/athlete/today");
+  await expect(page.getByRole("heading", { name: "Tu plan sin conexión" })).toBeVisible();
+  await expect(page.getByText("Rodaje de demostración", { exact: true }).first()).toBeVisible();
+  await page.getByRole("button", { name: "Borrar copia de este dispositivo" }).click();
+  await expect(page.getByText(/No hay una copia vigente/)).toBeVisible();
+  await context.setOffline(false);
+  await page.goto("/athlete/today");
+  await page.getByRole("button", { name: "Salir", exact: true }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await login(page, "solo-demo@example.com");
+  await page.goto("/offline");
+  await expect(page.getByText("Rodaje de demostración", { exact: true })).toHaveCount(0);
+});
+
+test("una copia vencida o una denegación HTTP deja de mostrar el plan", async ({ page }) => {
+  await login(page, "athlete-demo@example.com");
+  await page.goto("/athlete/today");
+  await expect(page.getByText("Rodaje de demostración", { exact: true }).first()).toBeVisible();
+  await page.route("**/api/nodo/athletes/*/workouts?*", (route) => route.fulfill({ status: 403, contentType: "application/json", body: JSON.stringify({ detail: "CONSENT_REQUIRED" }) }));
+  await page.goto("/athlete/today");
+  await expect(page.getByText("CONSENT_REQUIRED", { exact: true })).toBeVisible();
+  await expect(page.getByText("Rodaje de demostración", { exact: true })).toHaveCount(0);
+  expect(await page.evaluate(() => Object.keys(localStorage).filter((key) => key.startsWith("nodo.offline")))).toEqual([]);
+  await page.unroute("**/api/nodo/athletes/*/workouts?*");
+  await page.goto("/athlete/today");
+  await expect(page.getByText("Rodaje de demostración", { exact: true }).first()).toBeVisible();
+  await page.evaluate(() => {
+    for (const key of Object.keys(localStorage).filter((item) => item.startsWith("nodo.offline.workouts."))) {
+      const copy = JSON.parse(localStorage.getItem(key)!);
+      copy.expiresAt = "2000-01-01T00:00:00Z";
+      localStorage.setItem(key, JSON.stringify(copy));
+    }
+  });
+  await page.goto("/offline");
+  await expect(page.getByText(/No hay una copia vigente/)).toBeVisible();
+  await expect(page.getByText("Rodaje de demostración", { exact: true })).toHaveCount(0);
+});

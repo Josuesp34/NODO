@@ -5,9 +5,11 @@ from datetime import UTC, datetime
 import httpx
 from cryptography.fernet import Fernet
 from fastapi import HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.infrastructure.database.models import AthleteInvitation, PasswordReset, User
 from app.infrastructure.database.models.product import Job
 
 
@@ -56,9 +58,34 @@ def queue_email(db: AsyncSession, *, recipient: str, subject: str, body: str, de
     )
 
 
-async def send_queued_email(job: Job) -> None:
+async def send_queued_email(db: AsyncSession, job: Job) -> bool:
     import json
 
+    key = job.dedupe_key or ""
+    if key.startswith("nodo-invitation-"):
+        table, owner_field = AthleteInvitation, AthleteInvitation.athlete_id
+        entity_id = key.removeprefix("nodo-invitation-")
+    elif key.startswith("nodo-password-reset-"):
+        table, owner_field = PasswordReset, PasswordReset.user_id
+        entity_id = key.removeprefix("nodo-password-reset-")
+    else:
+        return False
+    if not entity_id.isdigit():
+        return False
+    user_id = await db.scalar(select(owner_field).where(table.id == int(entity_id)))
+    user = (
+        await db.scalar(
+            select(User).where(User.id == user_id).with_for_update().execution_options(populate_existing=True)
+        )
+        if user_id
+        else None
+    )
+    token = await db.scalar(select(table).where(table.id == int(entity_id)).execution_options(populate_existing=True))
+    if user is None or user.deleted_at is not None or token is None or token.consumed_at is not None:
+        return False
+    expires = token.expires_at if token.expires_at.tzinfo else token.expires_at.replace(tzinfo=UTC)
+    if expires <= datetime.now(UTC):
+        return False
     if not email_ready():
         raise RuntimeError("Correo transaccional no configurado en el worker")
     message = json.loads(_cipher().decrypt(job.payload["ciphertext"].encode()))
@@ -74,3 +101,4 @@ async def send_queued_email(job: Job) -> None:
     if not 200 <= response.status_code < 300:
         # No incluir respuesta de proveedor: podría contener dirección o contenido.
         raise RuntimeError(f"Resend rechazó el envío (HTTP {response.status_code})")
+    return True

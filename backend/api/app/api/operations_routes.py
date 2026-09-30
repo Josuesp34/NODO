@@ -1,7 +1,7 @@
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import current_superuser
@@ -28,6 +28,7 @@ async def operations(admin: User = Depends(current_superuser), db: AsyncSession 
     if oldest is not None and oldest.tzinfo is None:
         oldest = oldest.replace(tzinfo=UTC)
     return {
+        "database_revision": await db.scalar(text("SELECT version_num FROM alembic_version")),
         "observed_at": now,
         "worker_last_seen_at": last_seen,
         "worker_recent": (

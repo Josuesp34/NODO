@@ -5,7 +5,7 @@ from alembic import op
 from sqlalchemy.dialects.postgresql import JSONB
 
 revision = "0007_providers_assistant"
-down_revision = "0005_password_reset"
+down_revision = "0006_product_completion"
 branch_labels = None
 depends_on = None
 
@@ -69,14 +69,17 @@ def upgrade():
     )
 
     condition = sa.text("status IN ('connected', 'syncing', 'disconnect_pending') AND external_athlete_id IS NOT NULL")
-    op.create_index(
-        "uq_active_intervals_external",
-        "athlete_connections",
-        ["provider", "external_athlete_id"],
-        unique=True,
-        postgresql_where=condition,
-        sqlite_where=condition,
-    )
+    # 0004 uses the registered pilot-table metadata on a fresh install.
+    indexes = {index["name"] for index in sa.inspect(op.get_bind()).get_indexes("athlete_connections")}
+    if "uq_active_intervals_external" not in indexes:
+        op.create_index(
+            "uq_active_intervals_external",
+            "athlete_connections",
+            ["provider", "external_athlete_id"],
+            unique=True,
+            postgresql_where=condition,
+            sqlite_where=condition,
+        )
 
 
 def downgrade():

@@ -28,6 +28,7 @@ from app.infrastructure.database.models.product import (
 )
 from app.services.access import require_athlete_access
 from app.services.audit import add_audit
+from app.services import object_store
 
 router = APIRouter(prefix="/athletes/{athlete_id}/activities", tags=["Activities"])
 
@@ -112,6 +113,11 @@ async def upload_fit(
         )
     )
     if existing is not None:
+        if object_store.enabled():
+            try:
+                await object_store.put_file(f"fit/{athlete_id}/{file_hash}.fit", content)
+            except object_store.ObjectStoreError:
+                raise HTTPException(503, "No se pudo conservar el archivo privado; puedes reintentar") from None
         return JSONResponse(
             status_code=200,
             content={"status": "already_imported", "activity_id": existing.id, "file_hash": file_hash},
@@ -208,6 +214,8 @@ async def upload_fit(
             action="import_fit",
             after={"athlete_id": athlete_id, "file_hash": file_hash, "provider": "manual_fit"},
         )
+        if object_store.enabled() or settings.ENVIRONMENT != "development":
+            await object_store.put_file(f"fit/{athlete_id}/{file_hash}.fit", content)
         await db.commit()
     except IntegrityError:
         await db.rollback()
@@ -223,6 +231,9 @@ async def upload_fit(
             status_code=200,
             content={"status": "already_imported", "activity_id": existing.id, "file_hash": file_hash},
         )
+    except object_store.ObjectStoreError:
+        await db.rollback()
+        raise HTTPException(503, "No se pudo conservar el archivo privado; puedes reintentar") from None
     except Exception:
         await db.rollback()
         raise HTTPException(500, "No se pudo guardar la actividad") from None

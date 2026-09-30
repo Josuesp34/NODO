@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { clearOfflineData } from "@/lib/offline-store";
+import { clearOfflineData, observeOfflineInvalidation } from "@/lib/offline-store";
 import { capabilitiesFor, type Capability, type Identity } from "@/lib/contracts";
 import { Brand, LoadingState } from "./ui";
 import { OfflineWorkspace } from "./offline-workspace";
@@ -46,23 +46,37 @@ export function ProductShell({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<SessionState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [offline, setOffline] = useState(false);
+  const [validation, setValidation] = useState(0);
+
+  useEffect(() => {
+    const revalidate = () => { setSession(null); setValidation((value) => value + 1); };
+    const disconnected = () => { setSession(null); setOffline(true); };
+    const unsubscribe = observeOfflineInvalidation(revalidate);
+    window.addEventListener("offline", disconnected); window.addEventListener("online", revalidate);
+    return () => { unsubscribe(); window.removeEventListener("offline", disconnected); window.removeEventListener("online", revalidate); };
+  }, []);
 
   useEffect(() => {
     setError(null); setOffline(false);
-    void fetch("/api/session/me", { cache: "no-store" }).then(async (response) => {
+    const controller = new AbortController();
+    void fetch("/api/session/me", { cache: "no-store", signal: controller.signal }).then(async (response) => {
+      if (controller.signal.aborted) return;
       if (response.status === 401) {
         clearOfflineData();
         router.replace(`/login?next=${encodeURIComponent(pathname)}`);
         return;
       }
+      if (response.status === 403) { clearOfflineData(); setSession(null); throw new Error("Esta cuenta no tiene acceso activo."); }
       if (!response.ok) throw new Error("No pudimos validar tu sesión.");
       const identity = await response.json() as Identity;
-      setSession({ identity, capabilities: capabilitiesFor(identity) });
+      if (!controller.signal.aborted) setSession({ identity, capabilities: capabilitiesFor(identity) });
     }).catch((reason: unknown) => {
+      if (controller.signal.aborted) return;
       if (!navigator.onLine || reason instanceof TypeError) setOffline(true);
       else setError(reason instanceof Error ? reason.message : "No pudimos validar tu sesión.");
     });
-  }, [pathname, router]);
+    return () => controller.abort();
+  }, [pathname, router, validation]);
 
   const requested: Capability | null = pathname.startsWith("/admin") ? "staff" : pathname.startsWith("/coach") ? "coach" : pathname.startsWith("/athlete") ? "athlete" : null;
   const links = requested === "staff" || (!requested && session?.capabilities.includes("staff")) ? staffLinks : requested === "coach" ? coachLinks : athleteLinks;
@@ -108,7 +122,7 @@ export function ProductShell({ children }: { children: React.ReactNode }) {
             </nav>
             <div className="side-account"><Link className="nav-link" data-active={pathname.startsWith("/settings")} href="/settings/account"><span>⚙</span>Ajustes</Link><strong>{session.identity.first_name} {session.identity.last_name}</strong><small>{session.identity.email}</small></div>
           </aside>
-          <main className="product-main" id="contenido">{children}</main>
+          <main className="product-main" id="contenido" key={session.identity.id}>{children}</main>
         </div>
         <nav className="mobile-nav" aria-label="Navegación móvil">
           {mobileLinks.map(([href, , label]) => <Link data-active={pathname === href || pathname.startsWith(`${href}/`)} href={href} key={href}>{label}</Link>)}

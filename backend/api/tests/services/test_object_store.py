@@ -3,8 +3,8 @@ import os
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
-import pytest
 import httpx
+import pytest
 
 from app.services import object_store
 from app.services.object_store import (
@@ -53,7 +53,11 @@ def test_object_keys_reject_traversal_and_arbitrary_paths():
 
 
 def test_gcs_contract_deletes_each_generation_only_in_owner_prefix(monkeypatch):
-    monkeypatch.setattr(object_store, "settings", SimpleNamespace(STORAGE_BACKEND="gcs", STORAGE_BUCKET="synthetic-bucket", ENVIRONMENT="production"))
+    monkeypatch.setattr(
+        object_store,
+        "settings",
+        SimpleNamespace(STORAGE_BACKEND="gcs", STORAGE_BUCKET="synthetic-bucket", ENVIRONMENT="production"),
+    )
     calls = []
     key = "fit/1/" + "a" * 64 + ".fit"
 
@@ -76,7 +80,9 @@ def test_gcs_contract_deletes_each_generation_only_in_owner_prefix(monkeypatch):
         return httpx.Response(200, json=data)
 
     original = httpx.AsyncClient
-    monkeypatch.setattr(object_store.httpx, "AsyncClient", lambda **kwargs: original(transport=httpx.MockTransport(transport), **kwargs))
+    monkeypatch.setattr(
+        object_store.httpx, "AsyncClient", lambda **kwargs: original(transport=httpx.MockTransport(transport), **kwargs)
+    )
 
     async def authorization():
         return {"Authorization": "Bearer synthetic-token"}

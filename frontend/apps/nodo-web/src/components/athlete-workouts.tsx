@@ -24,9 +24,9 @@ export function TodayWorkspace() {
     void nodoRequest<Workout[]>(`athletes/${identity.id}/workouts?start=${range.start}&end=${range.end}`).then((items) => {
       const published = items.filter((item) => item.status === "published"); setWorkouts(published); saveWorkouts(identity.id, published, identity.timezone); setCachedAt(null);
     }).catch((reason) => {
-      const cached = problemFrom(reason).status === 0 ? readWorkouts(identity.id) : null;
+      const cached = reason instanceof TypeError ? readWorkouts(identity.id) : null;
       if (cached) { setWorkouts(cached.workouts); setCachedAt(cached.savedAt); }
-      else setError(problemFrom(reason).message);
+      else { setWorkouts([]); setError(problemFrom(reason).message); }
     }).finally(() => setLoading(false));
   }
   useEffect(load, [identity.id]);
@@ -44,7 +44,7 @@ export function WeekWorkspace() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const range = useMemo(() => weekRange(anchor), [anchor]);
-  useEffect(() => { setLoading(true); setError(null); void nodoRequest<Workout[]>(`athletes/${identity.id}/workouts?start=${range.start}&end=${range.end}`).then((items) => { const published = items.filter((item) => item.status === "published"); setWorkouts(published); saveWorkouts(identity.id, published, identity.timezone); setCachedAt(null); }).catch((reason) => { const copy = problemFrom(reason).status === 0 ? readWorkouts(identity.id) : null; if (copy) { setWorkouts(copy.workouts); setCachedAt(copy.savedAt); } else setError(problemFrom(reason).message); }).finally(() => setLoading(false)); }, [identity.id, range.end, range.start]);
+  useEffect(() => { setLoading(true); setError(null); void nodoRequest<Workout[]>(`athletes/${identity.id}/workouts?start=${range.start}&end=${range.end}`).then((items) => { const published = items.filter((item) => item.status === "published"); setWorkouts(published); saveWorkouts(identity.id, published, identity.timezone); setCachedAt(null); }).catch((reason) => { const copy = reason instanceof TypeError ? readWorkouts(identity.id) : null; if (copy) { setWorkouts(copy.workouts); setCachedAt(copy.savedAt); } else { setWorkouts([]); setError(problemFrom(reason).message); } }).finally(() => setLoading(false)); }, [identity.id, range.end, range.start]);
   const days = Array.from({ length: 7 }, (_, index) => addDays(range.start, index));
   return <div className="page page-narrow"><PageHeader eyebrow="Mi NODO / Semana" title="Tu semana" description={`${formatDay(range.start, { day: "numeric", month: "short" })} — ${formatDay(range.end, { day: "numeric", month: "short", year: "numeric" })}`} actions={<><button className="button icon-button" onClick={() => setAnchor(addDays(anchor, -7))}>←</button><button className="button" onClick={() => setAnchor(dayInZone(new Date(), identity.timezone))}>Hoy</button><button className="button icon-button" onClick={() => setAnchor(addDays(anchor, 7))}>→</button></>} />{cachedAt ? <p className="offline-banner" role="status">Copia guardada · {cachedAt}</p> : null}{error ? <ErrorState message={error} /> : null}{loading ? <div className="card">Actualizando semana…</div> : <div className="stack">{days.map((day) => { const daily = workouts.filter((item) => dayInZone(item.scheduled_date, identity.timezone) === day); return <section className="card" key={day}><div className="cluster" style={{ justifyContent: "space-between" }}><strong>{formatDay(day, { weekday: "long", day: "numeric", month: "short" })}</strong>{day === dayInZone(new Date(), identity.timezone) ? <StatusBadge tone="signal">Hoy</StatusBadge> : null}</div>{daily.length ? daily.map((workout) => <Link className={`workout-chip published`} href={`/athlete/workouts/${workout.id}`} key={workout.id}><span>{workout.title}</span><small>{workout.sport_type} · abrir detalle</small></Link>) : <p className="helper">Sin sesión publicada.</p>}</section>; })}</div>}</div>;
 }
@@ -52,10 +52,11 @@ export function WeekWorkspace() {
 export function WorkoutDetail({ workoutId }: { workoutId: number }) {
   const { identity } = useSession();
   const [workout, setWorkout] = useState<Workout | null>(null);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
-    const cached = readWorkouts(identity.id)?.workouts.find((item) => item.id === workoutId && item.status === "published"); if (cached) setWorkout(cached);
-    void nodoRequest<Workout[]>(`athletes/${identity.id}/workouts?start=${addDays(dayInZone(new Date(), identity.timezone), -366)}&end=${addDays(dayInZone(new Date(), identity.timezone), 366)}`).then((items) => { const found = items.find((item) => item.id === workoutId && item.status === "published"); if (!found) throw new Error("La sesión no está disponible o todavía no fue publicada."); setWorkout(found); }).catch((reason) => setError(reason instanceof Error ? reason.message : problemFrom(reason).message));
+    setWorkout(null); setError(null); setCachedAt(null);
+    void nodoRequest<Workout[]>(`athletes/${identity.id}/workouts?start=${addDays(dayInZone(new Date(), identity.timezone), -366)}&end=${addDays(dayInZone(new Date(), identity.timezone), 366)}`).then((items) => { const found = items.find((item) => item.id === workoutId && item.status === "published"); if (!found) throw new Error("La sesión no está disponible o todavía no fue publicada."); setWorkout(found); }).catch((reason) => { const copy = reason instanceof TypeError ? readWorkouts(identity.id) : null; const saved = copy?.workouts.find((item) => item.id === workoutId && item.status === "published"); if (saved && copy) { setWorkout(saved); setCachedAt(copy.savedAt); } else { setWorkout(null); setError(reason instanceof Error ? reason.message : problemFrom(reason).message); } });
   }, [identity.id, workoutId]);
-  return <div className="page page-narrow"><PageHeader eyebrow="Mi NODO / Sesión" title={workout?.title ?? "Entrenamiento"} actions={<Link className="button" href="/athlete/week">Volver a la semana</Link>} />{error && !workout ? <ErrorState message={error} /> : workout ? <WorkoutView workout={workout} /> : <div className="card">Abriendo sesión…</div>}</div>;
+  return <div className="page page-narrow"><PageHeader eyebrow="Mi NODO / Sesión" title={workout?.title ?? "Entrenamiento"} actions={<Link className="button" href="/athlete/week">Volver a la semana</Link>} />{cachedAt ? <p className="offline-banner" role="status">Copia guardada · {cachedAt}</p> : null}{error && !workout ? <ErrorState message={error} /> : workout ? <WorkoutView workout={workout} /> : <div className="card">Abriendo sesión…</div>}</div>;
 }

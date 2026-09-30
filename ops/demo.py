@@ -17,6 +17,8 @@ STATE = ROOT / ".local" / "nodo-demo"
 def prepare():
     STATE.mkdir(parents=True, exist_ok=True, mode=0o700)
     (STATE / "postgres").mkdir(exist_ok=True)
+    files = STATE / "files"
+    files.mkdir(exist_ok=True, mode=0o700)
     env_file = STATE / ".env"
     suffix = hashlib.sha256(str(ROOT).encode()).hexdigest()[:10]
     if not env_file.exists():

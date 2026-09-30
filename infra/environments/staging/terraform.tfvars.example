@@ -30,4 +30,10 @@ enable_monitoring_alerts = false
 #   EMAIL_QUEUE_KEY = { secret_id = "email-queue-key", version = "REPLACE_WITH_VERSION" }
 # }
 # api_env = { RESEND_FROM_EMAIL = "NODO <acceso@DOMINIO_VERIFICADO>", PUBLIC_APP_URL = "https://STAGING_DOMINIO" }
-# worker_env = { RESEND_FROM_EMAIL = "NODO <acceso@DOMINIO_VERIFICADO>", PUBLIC_APP_URL = "https://STAGING_DOMINIO", ENVIRONMENT = "staging" }
+# worker_env = { RESEND_FROM_EMAIL = "NODO <acceso@DOMINIO_VERIFICADO>", PUBLIC_APP_URL = "https://STAGING_DOMINIO" }
+
+# Antes de promover a otro proyecto, conceder lectura al deployer y service agent de prod.
+# artifact_reader_members = [
+#   "serviceAccount:nodo-prod-deploy@PROD_PROJECT_ID.iam.gserviceaccount.com",
+#   "serviceAccount:service-PROD_PROJECT_NUMBER@serverless-robot-prod.iam.gserviceaccount.com",
+# ]

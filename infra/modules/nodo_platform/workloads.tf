@@ -314,7 +314,7 @@ resource "google_cloud_run_v2_worker_pool" "worker" {
       }
 
       dynamic "env" {
-        for_each = var.worker_env
+        for_each = merge(var.worker_env, { ENVIRONMENT = var.environment })
         content {
           name  = env.key
           value = env.value

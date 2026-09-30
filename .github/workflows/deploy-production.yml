@@ -35,12 +35,34 @@ jobs:
         env:
           API_IMAGE: ${{ inputs.api_image }}
           PWA_IMAGE: ${{ inputs.pwa_image }}
+          SOURCE_IMAGE_PREFIX: ${{ vars.SOURCE_IMAGE_PREFIX }}
         run: bash ops/validate-release.sh digests
-      - uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed
+      - id: auth
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed
         with:
           workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+          token_format: access_token
       - uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f
+      - name: Resolve promotion registries
+        id: registries
+        env:
+          API_IMAGE: ${{ inputs.api_image }}
+          PWA_IMAGE: ${{ inputs.pwa_image }}
+        run: |
+          printf 'api=%s\n' "${API_IMAGE%%/*}" >> "$GITHUB_OUTPUT"
+          printf 'pwa=%s\n' "${PWA_IMAGE%%/*}" >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
+        with:
+          registry: ${{ steps.registries.outputs.api }}
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
+        if: steps.registries.outputs.pwa != steps.registries.outputs.api
+        with:
+          registry: ${{ steps.registries.outputs.pwa }}
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
       - name: Scan promoted API image
         uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
         with:

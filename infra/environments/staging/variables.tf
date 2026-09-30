@@ -110,3 +110,9 @@ variable "worker_env" {
   type        = map(string)
   default     = {}
 }
+
+variable "artifact_reader_members" {
+  description = "Lectores del registro, incluidos deployer y service agent de prod al promover desde staging."
+  type        = set(string)
+  default     = []
+}

@@ -40,4 +40,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-      - run: bash -n ops/*.sh
+      - run: for script in ops/*.sh; do bash -n "$script"; done
+      - run: bash ops/test-validate-release.sh

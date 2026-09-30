@@ -31,3 +31,7 @@ extend-immutable-calls = [
 
 [lint.isort]
 known-first-party = ["app"]
+
+[format]
+# Las migraciones aplicadas conservan su texto; cambios de esquema usan una nueva revisión.
+exclude = ["migrations/versions/*.py"]

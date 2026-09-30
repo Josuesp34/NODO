@@ -31,7 +31,8 @@ module "nodo" {
   worker_secret_bindings    = var.worker_secret_bindings
   migration_secret_bindings = var.migration_secret_bindings
 
-  api_env    = var.api_env
-  pwa_env    = var.pwa_env
-  worker_env = var.worker_env
+  api_env                 = var.api_env
+  pwa_env                 = var.pwa_env
+  worker_env              = var.worker_env
+  artifact_reader_members = var.artifact_reader_members
 }

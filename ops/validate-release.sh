@@ -31,8 +31,12 @@ case "$mode" in
   digests)
     require_env API_IMAGE
     require_env PWA_IMAGE
+    require_env SOURCE_IMAGE_PREFIX
+    [[ "$SOURCE_IMAGE_PREFIX" =~ ^[a-z][a-z0-9-]*-docker\.pkg\.dev/[a-z][a-z0-9-]+/[a-z0-9][a-z0-9._-]*$ ]] || fail "el origen aprobado debe ser un registro regional de Artifact Registry, proyecto y repositorio"
     validate_digest "$API_IMAGE"
     validate_digest "$PWA_IMAGE"
+    [[ "${API_IMAGE%@sha256:*}" == "${SOURCE_IMAGE_PREFIX}/api" ]] || fail "API fuera del repositorio/origen aprobado"
+    [[ "${PWA_IMAGE%@sha256:*}" == "${SOURCE_IMAGE_PREFIX}/pwa" ]] || fail "PWA fuera del repositorio/origen aprobado"
     ;;
   *)
     fail "modo inválido; usar source o digests"

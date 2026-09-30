@@ -16,7 +16,7 @@ La ubicación de cada módulo y prueba se define en [la estructura del repositor
 
 NODO es la plataforma; **NODO Lab** es el módulo de entrenador dentro de ella, no un producto aparte. El ADR 0001 acepta que una misma persona sea atleta y entrenadora, así que nada puede asumir un rol único por cuenta.
 
-El producto activo es una sola PWA en `frontend/apps/nodo-web`, con sesión BFF y módulos por capacidades. `nodo-lab` y `nodo-mobile` se conservan como referencias; el CI también compila Lab para detectar regresiones. PostgreSQL 16 sustituye TimescaleDB según los ADR 0007/0008. No construir pantallas nuevas en `nodo-mobile`.
+El producto activo es una sola PWA en `frontend/apps/nodo-web`, con sesión BFF y módulos por capacidades. `nodo-lab` y `nodo-mobile` se conservan como referencias; el CI también compila Lab para detectar regresiones. Expo está excluido del workspace activo según ADR 0003; no reactivarlo sin revisar sus dependencias y seguridad. PostgreSQL 16 sustituye TimescaleDB según los ADR 0007/0008. No construir pantallas nuevas en `nodo-mobile`.
 
 Acceso, planificación, FIT, check-ins, molestias, grupos y recuperación existen en código. El correo necesita entrega real verificada; IA e Intervals.icu siguen simulados/parciales y Web Push está pendiente. Consultar el inventario de [`docs/FUNCIONALIDADES_PRODUCTO.md`](docs/FUNCIONALIDADES_PRODUCTO.md), la matriz y el estado técnico antes de ofrecer capacidades.
 

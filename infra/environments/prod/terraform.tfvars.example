@@ -30,4 +30,4 @@ enable_monitoring_alerts = false
 #   EMAIL_QUEUE_KEY = { secret_id = "email-queue-key", version = "REPLACE_WITH_VERSION" }
 # }
 # api_env = { RESEND_FROM_EMAIL = "NODO <acceso@DOMINIO_VERIFICADO>", PUBLIC_APP_URL = "https://DOMINIO_APROBADO" }
-# worker_env = { RESEND_FROM_EMAIL = "NODO <acceso@DOMINIO_VERIFICADO>", PUBLIC_APP_URL = "https://DOMINIO_APROBADO", ENVIRONMENT = "production" }
+# worker_env = { RESEND_FROM_EMAIL = "NODO <acceso@DOMINIO_VERIFICADO>", PUBLIC_APP_URL = "https://DOMINIO_APROBADO" }

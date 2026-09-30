@@ -1,6 +1,6 @@
 # Funcionalidades actuales de NODO
 
-Actualizado: 23 de septiembre de 2026.
+Actualizado: 29 de septiembre de 2026.
 
 Este documento es el inventario funcional vigente. Distingue una función operativa de una simulación, una integración parcial y una capacidad todavía pendiente. La referencia ejecutable sigue siendo OpenAPI en `/docs` y las pruebas del repositorio.
 
@@ -19,6 +19,7 @@ Este documento es el inventario funcional vigente. Distingue una función operat
 | Pública | Landing, acceso, activación, recuperación, soporte, privacidad, términos y fallback offline | Funcional en código | Rutas Next, build PWA y QA visual local; recuperación exige correo real |
 | Sesión | BFF con cookies `httpOnly`, refresh rotado, logout y protección de rutas | Funcional | Pruebas PWA y backend; HTTPS real pendiente del despliegue |
 | Identidad | Coach, atleta, superusuario de bootstrap, roles múltiples y capacidades | Funcional | Acceso cruzado y normalización de capacidades probados |
+| Bootstrap | Job explícito para el primer administrador, idempotente y auditado | Funcional en código/pruebas | Sin registro development público; ejecución en producción pendiente |
 | Equipo | Invitación, activación y revocación de asignación coach-atleta | Funcional local; correo pendiente de activar | En producción la API encola el código cifrado con Resend y no lo devuelve; falta dominio, secretos y envío real. Desarrollo conserva entrega manual |
 | Correo/recuperación | Resend en cola, recuperación de contraseña y revocación de sesiones | Funcional en código; no operativo aún | Pruebas locales con transporte simulado; sin dominio verificado ni email real. Ver `RESEND_CONFIGURACION.md` |
 | Organizaciones | Organización, membresías, asignaciones y cupos por plan | Funcional | Persistencia y límite comercial en backend |
@@ -72,8 +73,8 @@ Por eso la carga manual de FIT es el camino funcional del piloto. La pantalla no
 
 ## Evidencia local vigente
 
-- backend: 50 pruebas y `ruff check` verdes;
-- PWA: typecheck, 9 pruebas y build Next de 37 páginas estáticas/rutas dinámicas;
+- backend: 58 pruebas y `ruff check` verdes;
+- PWA: typecheck, 34 pruebas y build Next de 37 páginas estáticas/rutas dinámicas;
 - PostgreSQL 16: migraciones 0001→0005, `alembic check`, downgrade base y upgrade head comprobados localmente; E2E coach → atleta comprobado previamente;
 - Docker API/PWA y Terraform staging/prod validados localmente;
 - sin credenciales reales de IA o Intervals.icu en el workspace.

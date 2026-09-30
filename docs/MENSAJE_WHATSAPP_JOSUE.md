@@ -8,6 +8,10 @@ Borrador para que Brandon lo copie y envíe. No se ha enviado ningún mensaje.
 >
 > Lo que falta para entregarlo operativo es configurar y verificar GCP/dominio/correo, terminar Intervals e IA reales, las pantallas y notificaciones pendientes, y comprobar respaldos, monitoreo y teléfonos. IA e Intervals todavía están simulados; tener el código publicado no significa que producción ya esté funcionando.
 >
-> Dejé el arranque, la demo y los pendientes con una propuesta de responsables. Hagamos una sesión para que lo levantes, revisemos el recorrido coach → atleta y acordemos lo que sigue.
+> Yo tampoco tengo definidos el proyecto GCP, dominio, cuenta de correo, app OAuth de Intervals ni proveedor IA. Inclúyelos en tus pendientes: revisar qué existe, gestionar accesos y definir, crear o configurar lo que falte. La autorización para subir a producción ya está dada.
+>
+> Dejé el arranque, la demo y el checklist para que lleves el seguimiento de lo pendiente. Hagamos una sesión para que lo levantes, revisemos el recorrido coach → atleta y acordemos prioridades y fechas.
 >
 > Versión y evidencia: https://github.com/Josuesp34/NODO/releases/tag/v0.4.0-rc.1
+>
+> Plan actualizado: https://github.com/Josuesp34/NODO/blob/main/docs/HANDOVER_JOSUE.md

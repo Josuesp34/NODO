@@ -7,6 +7,12 @@ from app.infrastructure.database.models.block import TrainingBlock
 from app.infrastructure.database.models.daily_metrics import DailyPhysiology
 from app.infrastructure.database.models.plan import PrescribedWorkout
 from app.infrastructure.database.models.operations import WorkerHeartbeat
+from app.infrastructure.database.models.privacy import (
+    NotificationDelivery,
+    NotificationPreference,
+    PrivacyArtifact,
+    PushSubscription,
+)
 from app.infrastructure.database.models.product import (
     ActivityLap,
     AssistantConfirmation,
@@ -78,6 +84,8 @@ __all__ = [
     "IngestionEvent",
     "Job",
     "ManagedPayment",
+    "NotificationDelivery",
+    "NotificationPreference",
     "Observation",
     "Organization",
     "OrganizationMembership",
@@ -85,6 +93,8 @@ __all__ = [
     "PlanAssignment",
     "PlanTemplate",
     "PrescribedWorkout",
+    "PrivacyArtifact",
+    "PushSubscription",
     "Recommendation",
     "ReviewItem",
     "Subscription",

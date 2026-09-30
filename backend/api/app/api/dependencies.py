@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -34,12 +34,20 @@ async def current_session(
 
 
 async def current_user(
+    request: Request,
     session: AuthSession = Depends(current_session),
     db: AsyncSession = Depends(get_db),
 ) -> User:
-    user = await db.get(User, session.user_id)
+    user = await db.scalar(
+        select(User).where(User.id == session.user_id).with_for_update().execution_options(populate_existing=True)
+    )
     if user is None or user.deleted_at is not None:
         raise unauthorized()
+    # Privacy/export remain usable after withdrawal; assistant use has a distinct purpose.
+    if "/assistant/" in request.url.path:
+        from app.services.privacy import require_processing_consent
+
+        await require_processing_consent(db, user.id, "ai_assistant")
     return user
 
 

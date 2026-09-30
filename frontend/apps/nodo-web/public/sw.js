@@ -23,6 +23,29 @@ self.addEventListener("message", (event) => {
   }
 });
 
+self.addEventListener("push", (event) => {
+  // Never show athlete names, health metrics or arbitrary provider content on a locked screen.
+  let payload = {};
+  try { payload = event.data?.json() ?? {}; } catch { /* Generic fallback remains private. */ }
+  const tag = typeof payload.tag === "string" && /^nodo-[a-f0-9]{24}$/.test(payload.tag) ? payload.tag : "nodo-update";
+  event.waitUntil(self.registration.showNotification("NODO", {
+    body: "Tienes una actualización. Abre NODO para revisarla.",
+    icon: "/icons/nodo.svg",
+    tag,
+    data: { url: "/app" },
+  }));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    const app = windows.find((client) => new URL(client.url).origin === self.location.origin);
+    if (app) { await app.navigate("/app"); return app.focus(); }
+    return self.clients.openWindow("/app");
+  })());
+});
+
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   if (request.method !== "GET") return;

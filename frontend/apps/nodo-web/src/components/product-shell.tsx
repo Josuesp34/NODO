@@ -34,7 +34,11 @@ const athleteLinks = [
   ["/athlete/complaints", "04", "Molestias"],
   ["/athlete/connections", "05", "Conexiones"],
   ["/athlete/profile", "06", "Perfil"],
+  ["/athlete/activities", "07", "Actividades"],
+  ["/athlete/assistant", "08", "Asistente"],
 ] as const;
+
+const staffLinks = [["/admin/operations", "01", "Operación"], ["/settings/commercial", "02", "Administración"]] as const;
 
 export function ProductShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -60,9 +64,9 @@ export function ProductShell({ children }: { children: React.ReactNode }) {
     });
   }, [pathname, router]);
 
-  const requested: Capability | null = pathname.startsWith("/coach") ? "coach" : pathname.startsWith("/athlete") ? "athlete" : null;
-  const links = requested === "coach" ? coachLinks : athleteLinks;
-  const mobileLinks = requested === "coach" ? coachLinks.slice(0, 4) : athleteLinks.slice(0, 4);
+  const requested: Capability | null = pathname.startsWith("/admin") ? "staff" : pathname.startsWith("/coach") ? "coach" : pathname.startsWith("/athlete") ? "athlete" : null;
+  const links = requested === "staff" || (!requested && session?.capabilities.includes("staff")) ? staffLinks : requested === "coach" ? coachLinks : athleteLinks;
+  const mobileLinks = links.slice(0, 4);
   const context = useMemo(() => session, [session]);
 
   async function logout() {
@@ -98,7 +102,7 @@ export function ProductShell({ children }: { children: React.ReactNode }) {
         </header>
         <div className="product-grid">
           <aside className="side-nav">
-            <p className="nav-label">{requested === "coach" ? "NODO Lab" : "Mi NODO"}</p>
+            <p className="nav-label">{requested === "staff" ? "Operación NODO" : requested === "coach" ? "NODO Lab" : "Mi NODO"}</p>
             <nav className="nav-links" aria-label="Navegación principal">
               {links.map(([href, index, label]) => <Link className="nav-link" data-active={pathname === href || (href !== "/coach" && pathname.startsWith(`${href}/`))} href={href} key={href}><span>{index}</span>{label}</Link>)}
             </nav>

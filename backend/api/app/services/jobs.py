@@ -3,10 +3,11 @@ import json
 import logging
 import os
 import socket
+from contextlib import suppress
 from datetime import UTC, date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -104,6 +105,10 @@ async def claim_jobs(db: AsyncSession, worker_id: str) -> list[Job]:
 
 
 async def execute_job(db: AsyncSession, job: Job) -> None:
+    from app.services.notifications import PushDeferred
+    from app.services.privacy_jobs import dispatch_privacy_job
+
+    job_id, job_kind = job.id, job.kind
     try:
         if job.kind == "recalculate_daily_load":
             await recompute_daily_load(
@@ -123,28 +128,32 @@ async def execute_job(db: AsyncSession, job: Job) -> None:
             from app.services.intervals_real import execute_intervals_disconnect_job
 
             await execute_intervals_disconnect_job(db, job)
-        elif job.kind == "send_web_push":
-            from app.services.notifications import send_notification
-
-            await send_notification(db, job)
-        elif job.kind in {"privacy_retention", "privacy_delete_user_files", "privacy_delete_artifact"}:
-            from app.services.privacy_jobs import dispatch_privacy_job
-
-            await dispatch_privacy_job(db, job)
+        elif await dispatch_privacy_job(db, job):
+            pass
         else:
             raise ValueError(f"Tipo de trabajo no soportado: {job.kind}")
+        current_status = await db.scalar(select(Job.status).where(Job.id == job_id))
+        if current_status is None or current_status == "cancelled":
+            await db.rollback()
+            return
         job.status = "completed"
         job.last_error = None
         job.locked_at = None
         job.locked_by = None
         await db.commit()
         logger.info(json.dumps({"event": "job_completed", "kind": job.kind, "attempt": job.attempts}))
+    except PushDeferred:
+        job.status = "pending"
+        job.attempts = max(0, job.attempts - 1)
+        job.locked_at = None
+        job.locked_by = None
+        await db.commit()
     except Exception as exc:
         await db.rollback()
-        fresh = await db.get(Job, job.id)
-        if fresh is None:
+        fresh = await db.get(Job, job_id)
+        if fresh is None or fresh.status == "cancelled":
             return
-        fresh.last_error = "Tipo de trabajo no soportado" if job.kind == "unsupported" else type(exc).__name__
+        fresh.last_error = "Tipo de trabajo no soportado" if job_kind == "unsupported" else type(exc).__name__
         fresh.locked_at = None
         fresh.locked_by = None
         if fresh.attempts >= fresh.max_attempts:
@@ -160,6 +169,9 @@ async def execute_job(db: AsyncSession, job: Job) -> None:
 async def run_once(worker_id: str | None = None) -> int:
     worker_id = worker_id or f"{socket.gethostname()}:{os.getpid()}"
     async with async_session_maker() as db:
+        from app.services.privacy import schedule_retention
+
+        await schedule_retention(db)
         heartbeat = await db.get(WorkerHeartbeat, worker_id)
         if heartbeat is None:
             db.add(WorkerHeartbeat(worker_id=worker_id, last_seen_at=datetime.now(UTC)))
@@ -167,9 +179,28 @@ async def run_once(worker_id: str | None = None) -> int:
             heartbeat.last_seen_at = datetime.now(UTC)
         await db.commit()
         jobs = await claim_jobs(db, worker_id)
-        for job in jobs:
-            await execute_job(db, job)
+        renewer = asyncio.create_task(renew_claims(worker_id, [job.id for job in jobs])) if jobs else None
+        try:
+            for job in jobs:
+                await execute_job(db, job)
+        finally:
+            if renewer is not None:
+                renewer.cancel()
+                with suppress(asyncio.CancelledError):
+                    await renewer
         return len(jobs)
+
+
+async def renew_claims(worker_id: str, job_ids: list[int]) -> None:
+    while True:
+        await asyncio.sleep(20)
+        async with async_session_maker() as db:
+            now = datetime.now(UTC)
+            await db.execute(
+                update(Job).where(Job.id.in_(job_ids), Job.status == "running", Job.locked_by == worker_id).values(locked_at=now)
+            )
+            await db.execute(update(WorkerHeartbeat).where(WorkerHeartbeat.worker_id == worker_id).values(last_seen_at=now))
+            await db.commit()
 
 
 async def run_forever() -> None:

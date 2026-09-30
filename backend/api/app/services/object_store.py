@@ -64,11 +64,17 @@ async def put_file(key: str, content: bytes) -> None:
         target = local_root() / key
 
         def write():
-            target.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-            with tempfile.NamedTemporaryFile(dir=target.parent, delete=False) as stream:
-                temporary = Path(stream.name)
-                stream.write(content)
-            temporary.replace(target)
+            temporary = None
+            try:
+                target.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+                with tempfile.NamedTemporaryFile(dir=target.parent, delete=False) as stream:
+                    temporary = Path(stream.name)
+                    stream.write(content)
+                temporary.replace(target)
+            except OSError:
+                if temporary is not None:
+                    temporary.unlink(missing_ok=True)
+                raise ObjectStoreError("No se pudo guardar el archivo privado") from None
 
         await asyncio.to_thread(write)
         return
@@ -95,7 +101,7 @@ async def read_file(key: str) -> bytes:
         try:
             with target.open("rb") as stream:
                 content = stream.read(settings.MAX_FIT_BYTES + 1)
-        except FileNotFoundError:
+        except OSError:
             raise ObjectStoreError("Archivo no disponible") from None
         if len(content) > settings.MAX_FIT_BYTES:
             raise ObjectStoreError("Archivo demasiado grande")
@@ -148,6 +154,8 @@ async def inventory(prefix: str):
                 yield path.relative_to(root).as_posix(), datetime.fromtimestamp(path.stat().st_mtime, UTC), None
         return
     if getattr(settings, "STORAGE_BACKEND", "none") != "gcs":
+        if settings.ENVIRONMENT != "development":
+            raise ObjectStoreError("Almacenamiento privado no configurado")
         return
     page = None
     try:

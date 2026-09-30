@@ -529,11 +529,13 @@ async def sweep_retention(db: AsyncSession, *, now: datetime | None = None) -> d
     # Expire old pending/dead email too; stale recovery codes must never deliver.
     counts["jobs"] = (
         await db.execute(
-            delete(Job).where(
+            delete(Job)
+            .where(
                 Job.created_at < outbox_cutoff,
                 Job.kind.not_in(["privacy_delete_file", "privacy_delete_user_files", "intervals_disconnect"]),
                 Job.status != "running",
             )
+            .execution_options(synchronize_session=False)
         )
     ).rowcount
     for sub in (await db.scalars(select(PushSubscription).where(PushSubscription.expires_at < now))).all():

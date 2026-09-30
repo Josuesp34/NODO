@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import re
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from urllib.parse import quote
@@ -54,15 +55,50 @@ def _delete_storage_object(kind: str, locator: str) -> None:
 
         credentials, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/devstorage.read_write"])
         with AuthorizedSession(credentials) as session:
-            response = session.delete(
-                f"https://storage.googleapis.com/storage/v1/b/{quote(bucket, safe='')}/o/{quote(object_name, safe='')}",
-                timeout=15,
-                allow_redirects=False,
-            )
-        if response.status_code not in {204, 404}:
-            raise RuntimeError(f"Private file cleanup HTTP {response.status_code}")
+            _delete_gcs_generations(session, bucket, object_name)
     else:
         raise RuntimeError("Private storage adapter unavailable")
+
+
+def _delete_gcs_generations(session, bucket: str, object_name: str) -> None:
+    """Delete exact-name live/noncurrent generations, never prefix neighbours.
+
+    GCS objects.list versions=true and objects.delete generation contracts:
+    https://cloud.google.com/storage/docs/json_api/v1/objects/list
+    https://cloud.google.com/storage/docs/json_api/v1/objects/delete
+    """
+    base = f"https://storage.googleapis.com/storage/v1/b/{quote(bucket, safe='')}/o"
+    object_url = f"{base}/{quote(object_name, safe='')}"
+    page, seen = None, set()
+    while True:
+        params = {"prefix": object_name, "versions": "true", "maxResults": "1000"}
+        if page:
+            params["pageToken"] = page
+        response = session.get(base, params=params, timeout=15, allow_redirects=False)
+        if response.status_code != 200:
+            raise RuntimeError("Private file inventory failed")
+        payload = response.json()
+        if not isinstance(payload, dict) or not isinstance(payload.get("items", []), list):
+            raise RuntimeError("Invalid private file inventory")
+        for item in payload.get("items", []):
+            if not isinstance(item, dict) or not isinstance(item.get("name"), str):
+                raise RuntimeError("Invalid private file inventory")
+            if item["name"] != object_name:
+                continue
+            generation = item.get("generation")
+            if not isinstance(generation, str) or not re.fullmatch(r"[1-9][0-9]{0,19}", generation):
+                raise RuntimeError("Invalid private file generation")
+            deleted = session.delete(
+                object_url, params={"generation": generation}, timeout=15, allow_redirects=False
+            )
+            if deleted.status_code not in {204, 404}:
+                raise RuntimeError("Private file generation cleanup failed")
+        page = payload.get("nextPageToken")
+        if page is None or page == "":
+            return
+        if not isinstance(page, str) or len(page) > 4096 or page in seen:
+            raise RuntimeError("Invalid private file pagination")
+        seen.add(page)
 
 
 async def delete_artifact(db: AsyncSession, job: Job, *, transport=None) -> None:

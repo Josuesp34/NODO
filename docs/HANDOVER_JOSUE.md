@@ -16,11 +16,11 @@ El objetivo es entregar el código, la demo reproducible y una lista concreta de
 | Datos deportivos | FIT, historial/detalle paginado, vínculo editable a sesión, comparación determinista, fuente/calidad y días locales | Probar con datos consentidos; no asumir equivalencia de unidades ni cumplimiento cuando faltan datos |
 | Intervals.icu | Inicio/callback OAuth, state de un uso, scopes de lectura, tokens cifrados, webhook, backfill/sync, reconexión y revocación durable | App aprobada, callback/dominio, cuenta consentida e importación real |
 | Asistentes | Chats persistidos coach/atleta, herramientas autorizadas, citas, preview/confirmación, streaming/cancelación, límites/uso y adaptador Vertex | Modelo/región/condiciones/costo aprobados y evaluación con proveedor real; demo usa simulador explícito |
-| Notificaciones | Preferencias, zona/silencio, suscripciones cifradas, Web Push en cola, dedupe, baja/expiración y payload mínimo | Claves VAPID, HTTPS y recepción en dispositivo consentido; eventos/reminders aún pasan cierre integrado |
+| Notificaciones | Preferencias, zona/silencio, suscripciones cifradas, avisos de producto en cola, recordatorios opt-in en la hora anterior a una sesión, dedupe, baja/expiración y payload mínimo | Claves VAPID, HTTPS y recepción/baja en dispositivo consentido |
 | Privacidad y comercial | Consentimiento por finalidad, exportación/borrado FK, limpieza durable de archivos/tokens/chats, retención periódica, cupos/suspensión y administración por entidades autorizadas | Aviso/retención legal, política de backups, soporte y precio; cobros administrados, sin pasarela |
 | Calidad/plataforma | Corpus sintético 70 × 12 semanas, benchmark autenticado, E2E, PostgreSQL, worker con lease, IaC/CI y runbooks | Cierre de pruebas/CI final, dispositivos, rendimiento cloud, restauración y operación reales |
 
-El inventario detallado está en [FUNCIONALIDADES_PRODUCTO.md](FUNCIONALIDADES_PRODUCTO.md); la matriz separa implementación, prueba local y validación externa en [MATRIZ_REQUISITOS.md](MATRIZ_REQUISITOS.md). Escenarios precompetencia y panel de costos agregados están en el cierre de producto; no declararlos aceptados antes de su evidencia integrada.
+El inventario detallado está en [FUNCIONALIDADES_PRODUCTO.md](FUNCIONALIDADES_PRODUCTO.md); la matriz separa implementación, prueba local y validación externa en [MATRIZ_REQUISITOS.md](MATRIZ_REQUISITOS.md). El candidato incorpora escenarios precompetencia de cargas explícitas y panel de costos IA: están probados con datos sintéticos y conservan sus límites. Los escenarios no predicen rendimiento ni publican planes; los costos son estimaciones/reservas, no facturas.
 
 ## Versión y fuente de entrega
 
@@ -61,7 +61,7 @@ No exponer esta demo a internet ni reutilizar sus claves en producción. El esta
 - [ ] Registra check-in/molestia, revisa evolución y decide con motivo; prueba una propuesta obsoleta.
 - [ ] Usa ambos chats en modo simulado explícito, abre citas y confirma un borrador. Revoca asignación/consentimiento y comprueba historial, replay y exportación protegidos.
 - [ ] Revisa preferencias Push, exportación/borrado y administración sintética. No confundir transporte HTTP de prueba con recepción física.
-- [ ] Revisa escenarios/costos/reminders únicamente si la validación integrada ya los identifica como cerrados.
+- [ ] Compara dos alternativas de carga hasta una competencia, revisa supuestos/estado inicial y el panel de estimaciones/reservas IA. Muestra recordatorios con transporte controlado; la recepción física permanece pendiente.
 - [ ] Registra fecha, participantes, versión, resultado, pendientes y responsable. La recepción de Josué no está realizada aún.
 
 ## Secuencia pendiente de activación con Josué

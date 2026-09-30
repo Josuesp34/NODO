@@ -17,12 +17,12 @@ Login, activación, recuperación, logout y escrituras requieren el Origin exact
 | Módulo | Rutas y capacidades |
 | --- | --- |
 | Pública | `/`, `/login`, `/activate`, `/password-reset`, `/offline`, `/privacy`, `/terms`, `/support`, `/guide/fit` |
-| Coach | `/coach`, `/coach/athletes`, calendario/perfil/actividades por atleta autorizado, `/coach/review`, `/coach/recommendations`, `/coach/groups`, `/coach/templates`, `/coach/copilot` |
+| Coach | `/coach`, `/coach/athletes`, calendario/perfil/actividades/escenarios por atleta autorizado, `/coach/review`, `/coach/recommendations`, `/coach/groups`, `/coach/templates`, `/coach/copilot` |
 | Atleta | `/athlete/today`, `/athlete/week`, detalle de workout, `/athlete/check-in`, molestias/alta, `/athlete/profile`, `/athlete/activities` y detalle, `/athlete/connections`, `/athlete/assistant` |
-| Ajustes | `/settings/account`, `/settings/notifications`, `/settings/privacy`, `/settings/data`, `/settings/commercial` |
+| Ajustes | `/settings/account`, `/settings/notifications`, `/settings/privacy`, `/settings/data`, `/settings/commercial`, `/settings/ai-costs` |
 | Administración | `/admin/operations` y comercial con selectores de entidades autorizadas; capacidades restringidas en servidor |
 
-Historial/detalle/vinculación y comparación consumen API, con paginación y estados de insuficiencia/calidad. Perfil/competencias, evolución de molestias, grupos/plantillas y propuestas conservan versiones y permisos. El panel de escenarios precompetencia/costos agregados y reminders está en cierre de integración; no darlo por aceptado sin su evidencia final.
+Historial/detalle/vinculación y comparación consumen API, con paginación y estados de insuficiencia/calidad. Perfil/competencias, evolución de molestias, grupos/plantillas y propuestas conservan versiones y permisos. La PWA incorpora escenarios precompetencia y panel de estimaciones/reservas IA; los recordatorios opt-in se programan en servidor y respetan preferencias/silencio/plazo. Sus pruebas usan datos sintéticos y transporte controlado; recepción física y consumo externo siguen pendientes.
 
 `AssistantWorkspace` conecta ambos chats al API: conversaciones persistidas, fuentes/citas, previews/confirmaciones, request_key, streaming/cancelación y uso. El proveedor por defecto sigue `simulated`, indicado como tal; el adaptador Vertex existe pero no se ha evaluado con un proveedor real. El servidor revalida todos los atletas usados en contexto/historial aunque el modelo no los cite, y protege replay y exportación tras revocación.
 

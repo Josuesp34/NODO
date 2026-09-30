@@ -61,6 +61,39 @@ test("la cuenta multirol cambia de módulo y la persona sin coach conserva su cu
   await expect(page.locator("h1")).toBeVisible();
 });
 
+test("coach publica la versión vigente y un editor viejo no la sobrescribe", async ({ page, context, browser }) => {
+  await login(page, "coach-demo@example.com");
+  const response = await page.request.get("/api/nodo/auth/athletes");
+  const athlete = (await response.json()).find((item: { email: string }) => item.email === "athlete-demo@example.com");
+  expect(athlete).toBeTruthy();
+  const calendar = `/coach/athletes/${athlete.id}/calendar`;
+  const title = `Sesión sintética ${test.info().project.name} ${Date.now()}`;
+  await page.goto(calendar);
+  await page.getByRole("button", { name: "+ Sesión", exact: true }).first().click();
+  await page.getByLabel("Título", { exact: true }).fill(title);
+  await page.getByLabel("Cantidad del paso 2", { exact: true }).fill("600");
+  await page.getByRole("button", { name: "Guardar borrador", exact: true }).click();
+  await expect(page.getByRole("button", { name: /Publicar versión 1/ })).toBeVisible();
+  const stale = await context.newPage();
+  await stale.goto(calendar);
+  await stale.getByRole("button", { name: new RegExp(title) }).first().click();
+  await expect(stale.getByRole("button", { name: /Publicar versión 1/ })).toBeVisible();
+  await page.getByLabel("Título", { exact: true }).fill(`${title} revisada`);
+  await page.getByRole("button", { name: "Guardar cambios", exact: true }).click();
+  await expect(page.getByRole("button", { name: /Publicar versión 2/ })).toBeVisible();
+  await stale.getByRole("button", { name: /Publicar versión 1/ }).click();
+  await expect(stale.getByText("El plan cambió mientras editabas.", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: /Publicar versión 2/ }).click();
+  await expect(page.getByText("published · v3", { exact: true })).toBeVisible();
+  const athleteContext = await browser.newContext({ baseURL: webURL });
+  try {
+    const athletePage = await athleteContext.newPage();
+    await login(athletePage, "athlete-demo@example.com");
+    await expect(athletePage.getByText(`${title} revisada`, { exact: true }).first()).toBeVisible();
+    await expect(athletePage.getByText(title, { exact: true })).toHaveCount(0);
+  } finally { await athleteContext.close(); }
+});
+
 test("el BFF rechaza escrituras desde otro origen antes de la API", async ({ page }) => {
   await login(page, "athlete-demo@example.com");
   const response = await page.request.post("/api/session/logout", { headers: { Origin: "https://another-origin.example" } });

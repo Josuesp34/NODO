@@ -29,7 +29,6 @@ export default function LoginPage() {
       const requested = new URLSearchParams(window.location.search).get("next");
       const safeNext = requested?.startsWith("/") && !requested.startsWith("//") && !/[\\\u0000-\u001f]/.test(requested);
       router.replace(safeNext && requested ? requested : "/app");
-      router.refresh();
     } catch (reason) { setError(reason instanceof Error ? reason.message : "No fue posible iniciar sesión."); }
     finally { setSubmitting(false); }
   }

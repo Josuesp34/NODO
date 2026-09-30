@@ -36,6 +36,8 @@ def test_local_store_isolates_owners_and_retains_recent_files(tmp_path, monkeypa
         await put_file(other_key, b"synthetic-other")
         old = datetime.now(UTC) - timedelta(days=10)
         os.utime(tmp_path / old_key, (old.timestamp(), old.timestamp()))
+        await put_file(old_key, b"synthetic-old")
+        assert (tmp_path / old_key).stat().st_mtime == old.timestamp()
         assert await prune_expired_files(datetime.now(UTC) - timedelta(days=5)) == 1
         assert await read_file(other_key) == b"synthetic-other"
         assert await delete_athlete_files(1) == 0
@@ -96,3 +98,64 @@ def test_production_cleanup_fails_closed_without_configured_storage(monkeypatch)
     monkeypatch.setattr(object_store, "settings", SimpleNamespace(STORAGE_BACKEND="none", ENVIRONMENT="production"))
     with pytest.raises(ObjectStoreError):
         asyncio.run(delete_athlete_files(1))
+
+
+def test_exports_expire_before_training_originals(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        object_store,
+        "settings",
+        SimpleNamespace(
+            STORAGE_BACKEND="local",
+            STORAGE_LOCAL_PATH=str(tmp_path),
+            ENVIRONMENT="development",
+            MAX_FIT_BYTES=1024,
+        ),
+    )
+
+    async def scenario():
+        fit = "fit/1/" + "a" * 64 + ".fit"
+        export = "export/1/" + "b" * 64 + ".json"
+        old = datetime.now(UTC) - timedelta(days=40)
+        for key in (fit, export):
+            await put_file(key, b"synthetic")
+            os.utime(tmp_path / key, (old.timestamp(), old.timestamp()))
+        assert (
+            await prune_expired_files(datetime.now(UTC) - timedelta(days=365), datetime.now(UTC) - timedelta(days=30))
+            == 1
+        )
+        assert await read_file(fit) == b"synthetic"
+        with pytest.raises(ObjectStoreError):
+            await read_file(export)
+
+    asyncio.run(scenario())
+
+
+def test_gcs_duplicate_upload_preserves_original_generation_and_expiry(monkeypatch):
+    monkeypatch.setattr(
+        object_store,
+        "settings",
+        SimpleNamespace(
+            STORAGE_BACKEND="gcs",
+            STORAGE_BUCKET="synthetic-bucket",
+            ENVIRONMENT="production",
+            MAX_FIT_BYTES=1024,
+        ),
+    )
+    original = httpx.AsyncClient
+    calls = []
+
+    def transport(request):
+        calls.append(request)
+        assert request.url.params["ifGenerationMatch"] == "0"
+        return httpx.Response(412)
+
+    monkeypatch.setattr(
+        object_store.httpx, "AsyncClient", lambda **kwargs: original(transport=httpx.MockTransport(transport), **kwargs)
+    )
+
+    async def authorization():
+        return {"Authorization": "Bearer synthetic-token"}
+
+    monkeypatch.setattr(object_store, "authorization", authorization)
+    asyncio.run(put_file("fit/1/" + "a" * 64 + ".fit", b"synthetic"))
+    assert len(calls) == 1

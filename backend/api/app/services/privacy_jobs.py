@@ -88,9 +88,7 @@ def _delete_gcs_generations(session, bucket: str, object_name: str) -> None:
             generation = item.get("generation")
             if not isinstance(generation, str) or not re.fullmatch(r"[1-9][0-9]{0,19}", generation):
                 raise RuntimeError("Invalid private file generation")
-            deleted = session.delete(
-                object_url, params={"generation": generation}, timeout=15, allow_redirects=False
-            )
+            deleted = session.delete(object_url, params={"generation": generation}, timeout=15, allow_redirects=False)
             if deleted.status_code not in {204, 404}:
                 raise RuntimeError("Private file generation cleanup failed")
         page = payload.get("nextPageToken")
@@ -136,7 +134,9 @@ async def dispatch_privacy_job(db: AsyncSession, job: Job) -> bool:
         try:
             from app.services.object_store import prune_expired_files
 
-            counts["storage_files"] = await prune_expired_files(cutoff)
+            counts["storage_files"] = await prune_expired_files(
+                cutoff, datetime.now(UTC) - timedelta(days=settings.EXPORT_RETENTION_DAYS)
+            )
         except Exception:
             raise RuntimeError("Private storage retention failed; retry required") from None
         artifacts = (

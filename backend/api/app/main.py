@@ -10,6 +10,7 @@ from app.api.file_routes import router as file_router
 from app.api.intervals_routes import router as intervals_router
 from app.api.operations_routes import router as operations_router
 from app.api.planning_routes import router as planning_router
+from app.api.privacy_routes import router as privacy_router
 from app.api.product_routes import router as product_router
 from app.api.routes import router
 from app.core.config import settings
@@ -20,7 +21,7 @@ def get_application() -> FastAPI:
     application = FastAPI(
         title=settings.PROJECT_NAME,
         description="Backend de NODO para entrenador y atleta",
-        version="0.4.0",
+        version="0.5.0",
     )
     application.add_middleware(
         CORSMiddleware,
@@ -36,6 +37,7 @@ def get_application() -> FastAPI:
     application.include_router(file_router, prefix=settings.API_V1_STR)
     application.include_router(intervals_router, prefix=settings.API_V1_STR)
     application.include_router(operations_router, prefix=settings.API_V1_STR)
+    application.include_router(privacy_router, prefix=settings.API_V1_STR)
     application.include_router(product_router, prefix=settings.API_V1_STR)
     application.include_router(assistant_router, prefix=settings.API_V1_STR)
 

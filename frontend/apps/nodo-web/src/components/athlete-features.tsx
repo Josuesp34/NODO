@@ -1,17 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import { IntervalsConnection } from "./intervals-connection";
 import { CompetitionsWorkspace } from "./competitions-workspace";
 import { ComplaintEvolution, type ComplaintRecord } from "./complaint-evolution";
 import { FormEvent, useEffect, useState } from "react";
 import { useSession } from "./product-shell";
 import { EmptyState, ErrorState, PageHeader, StatusBadge } from "./ui";
 import { nodoRequest, problemFrom } from "@/lib/api";
-import { isoDay } from "@/lib/dates";
+import { dayInZone } from "@/lib/dates";
 
 export function CheckInWorkspace() {
   const { identity } = useSession();
-  const [form, setForm] = useState({ local_date: isoDay(), fatigue: "5", perceived_rest: "5", stress: "5", session_rpe: "", notes: "" });
+  const [form, setForm] = useState({ local_date: dayInZone(new Date(), identity.timezone), fatigue: "5", perceived_rest: "5", stress: "5", session_rpe: "", notes: "" });
   const [state, setState] = useState<"idle" | "saving" | "saved">("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -38,7 +39,7 @@ export function ComplaintsWorkspace({ createOnly = false }: { createOnly?: boole
   const [loading, setLoading] = useState(!createOnly);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
-  const [form, setForm] = useState({ zone: "", laterality: "not_applicable", intensity_0_10: "3", started_on: isoDay(), limits_movement: false, note: "" });
+  const [form, setForm] = useState({ zone: "", laterality: "not_applicable", intensity_0_10: "3", started_on: dayInZone(new Date(), identity.timezone), limits_movement: false, note: "" });
   const endpoint = `athletes/${identity.id}/complaints`;
 
   useEffect(() => {
@@ -51,45 +52,20 @@ export function ComplaintsWorkspace({ createOnly = false }: { createOnly?: boole
     try {
       const created = await nodoRequest<Complaint>(endpoint, { method: "POST", body: { ...form, intensity_0_10: Number(form.intensity_0_10), note: form.note || null } });
       setItems((current) => [created, ...current]); setSaved(true);
-      setForm({ zone: "", laterality: "not_applicable", intensity_0_10: "3", started_on: isoDay(), limits_movement: false, note: "" });
+      setForm({ zone: "", laterality: "not_applicable", intensity_0_10: "3", started_on: dayInZone(new Date(), identity.timezone), limits_movement: false, note: "" });
     } catch (reason) { setError(problemFrom(reason).message); }
   }
 
   return <div className="page page-narrow"><PageHeader eyebrow="Mi NODO / Molestias" title={createOnly ? "Reportar una molestia" : "Molestias"} description="Puedes reportar sin reloj. NODO registra evolución y revisión; no diagnostica ni autoriza el retorno tras una lesión." actions={!createOnly ? <Link className="button button-primary" href="/athlete/complaints/new">+ Reportar</Link> : <Link className="button" href="/athlete/complaints">Volver</Link>} />{createOnly ? <form className="card stack" onSubmit={submit}><div className="form-grid"><label className="field"><span className="field-label">Zona corporal</span><input className="input" value={form.zone} onChange={(event) => setForm({ ...form, zone: event.target.value })} placeholder="Ej. rodilla" required /></label><label className="field"><span className="field-label">Lateralidad</span><select className="select" value={form.laterality} onChange={(event) => setForm({ ...form, laterality: event.target.value })}><option value="not_applicable">No aplica</option><option value="left">Izquierda</option><option value="right">Derecha</option><option value="bilateral">Ambas</option><option value="center">Centro</option></select></label><label className="field"><span className="field-label">Intensidad percibida · 0–10</span><input className="input" type="number" min="0" max="10" value={form.intensity_0_10} onChange={(event) => setForm({ ...form, intensity_0_10: event.target.value })} required /></label><label className="field"><span className="field-label">Inicio</span><input className="input" type="date" value={form.started_on} onChange={(event) => setForm({ ...form, started_on: event.target.value })} required /></label><label className="field span-all cluster"><input type="checkbox" checked={form.limits_movement} onChange={(event) => setForm({ ...form, limits_movement: event.target.checked })} /> Limita movimiento o sesión</label><label className="field span-all"><span className="field-label">Nota opcional</span><textarea className="textarea" value={form.note} onChange={(event) => setForm({ ...form, note: event.target.value })} /></label></div>{error ? <ErrorState message={error} /> : null}{saved ? <div className="alert alert-success" role="status">Reporte guardado y enviado a revisión.</div> : null}<button className="button button-primary">Enviar reporte</button></form> : loading ? <div className="card">Cargando molestias…</div> : error ? <ErrorState message={error} /> : items.length ? <div className="stack">{items.map((item) => <article className="card" key={item.id}><div className="cluster" style={{ justifyContent: "space-between" }}><StatusBadge tone={item.intensity_0_10 >= 7 ? "coral" : "info"}>{item.status}</StatusBadge><span className="metadata">{item.started_on}</span></div><h2>{item.zone} · {item.laterality}</h2><p>Intensidad percibida: <strong>{item.intensity_0_10}/10</strong></p><p className="muted">{item.limits_movement ? "Afecta el movimiento o la sesión." : "No reporta limitación de movimiento."}</p><ComplaintEvolution item={item} editable onChanged={() => { void nodoRequest<Complaint[]>(`athletes/${identity.id}/complaints`).then(setItems); }} /></article>)}</div> : <EmptyState title="No hay molestias reportadas." copy="Si algo cambia, repórtalo aunque no uses un reloj." action={<Link className="button button-primary" href="/athlete/complaints/new">Reportar molestia</Link>} />}</div>;
 }
 
-type Connection = { provider: string; status: string; last_sync_at?: string | null };
 type FitResult = { status: string; activity_id: number; trimp_status?: string };
 
 export function ConnectionsWorkspace() {
   const { identity } = useSession();
-  const [connection, setConnection] = useState<Connection | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
-  const connectionPath = `athletes/${identity.id}/connections/intervals`;
-
-  useEffect(() => {
-    void nodoRequest<Connection>(connectionPath)
-      .then(setConnection)
-      .catch((reason) => setMessage(problemFrom(reason).message));
-  }, [connectionPath]);
-
-  async function connect(mode: "simulated") {
-    setBusy(true); setMessage(null);
-    try {
-      const next = await nodoRequest<Connection>(connectionPath, { method: "POST", body: { mode } });
-      setConnection(next);
-      setMessage("Simulación persistida. No se compartieron credenciales con Intervals.icu.");
-    } catch (reason) { setMessage(problemFrom(reason).message); }
-    finally { setBusy(false); }
-  }
-  async function disconnect() {
-    setBusy(true); setMessage(null);
-    try { await nodoRequest(connectionPath, { method: "DELETE" }); setConnection((current) => current ? { ...current, status: "revoked" } : null); setMessage("Conexión revocada en el servidor."); }
-    catch (reason) { setMessage(problemFrom(reason).message); }
-    finally { setBusy(false); }
-  }
   async function upload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (!file) return;
     const body = new FormData(); body.set("file", file); setMessage(null); setBusy(true);
@@ -107,29 +83,7 @@ export function ConnectionsWorkspace() {
         title="Conexiones"
         description="NODO conserva proveedor, método, unidad y antigüedad. Una conexión no se presenta como activa si el servidor no lo confirma."
       />
-      <section className="card stack">
-        <StatusBadge tone={connection?.status === "active" ? "signal" : "info"}>
-          Intervals.icu · {connection?.status ?? "sin verificar"}
-        </StatusBadge>
-        <h2>Intervals.icu</h2>
-        <p className="muted">
-          La conexión real todavía está pendiente: esta versión no completa OAuth, sincronización ni webhooks. Puedes
-          probar el estado simulado sin compartir credenciales externas.
-        </p>
-        <div className="cluster">
-          <button className="button button-primary" disabled title="La conexión OAuth real aún no está disponible">
-            Conexión real pendiente
-          </button>
-          <button className="button" disabled={busy} onClick={() => connect("simulated")}>
-            Probar simulación
-          </button>
-          {connection && connection.status !== "revoked" ? (
-            <button className="button button-danger" disabled={busy} onClick={disconnect}>
-              Revocar
-            </button>
-          ) : null}
-        </div>
-      </section>
+      <IntervalsConnection />
       <section className="card stack" style={{ marginTop: 18 }}>
         <StatusBadge>Respaldo manual disponible</StatusBadge>
         <h2>Cargar archivo FIT</h2>

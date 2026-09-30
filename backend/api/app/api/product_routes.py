@@ -1,4 +1,3 @@
-import secrets
 from datetime import UTC, date, datetime, timedelta
 from typing import Literal
 
@@ -8,7 +7,7 @@ from sqlalchemy import case, delete, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import current_coach, current_superuser, current_user
+from app.api.dependencies import current_coach, current_user
 from app.api.planning_routes import check_block, workout_view
 from app.api.product_schemas import (
     CheckinUpsert,
@@ -21,9 +20,6 @@ from app.api.product_schemas import (
     ComplaintView,
     ConnectionRequest,
     ConnectionView,
-    ConsentGrant,
-    ConsentView,
-    DeleteAccount,
     GroupCreate,
     GroupMemberCreate,
     GroupMemberView,
@@ -31,8 +27,6 @@ from app.api.product_schemas import (
     MemberReplace,
     ObservationCreate,
     ObservationView,
-    PaymentCreate,
-    PlanCreate,
     ProfileUpsert,
     ProfileView,
     RecommendationCreate,
@@ -40,48 +34,34 @@ from app.api.product_schemas import (
     RecommendationView,
     ReviewDecision,
     ReviewItemView,
-    SubscriptionCreate,
     TemplateApply,
     TemplateCreate,
     TemplateReplace,
     TemplateView,
 )
 from app.api.schemas import WorkoutCreate
-from app.core.config import settings
 from app.core.database import get_db
-from app.core.security import hash_password, utcnow, verify_password
 from app.domain.comparison import local_day
-from app.infrastructure.database.models import Activity, AuthSession, PrescribedWorkout, TrainingBlock, User
+from app.infrastructure.database.models import PrescribedWorkout, User
 from app.infrastructure.database.models.product import (
-    AssistantConfirmation,
-    AssistantMessage,
-    AssistantThread,
     AthleteConnection,
     AthleteGroup,
     AthleteProfile,
     AuditLog,
     Checkin,
     CoachAthleteAssignment,
-    CommercialPlan,
     Competition,
     Complaint,
     ComplaintUpdate,
-    Consent,
-    DailyLoad,
     Decision,
     GroupMembership,
-    ManagedPayment,
     Observation,
-    OrganizationMembership,
     PlanAssignment,
     PlanTemplate,
     Recommendation,
     ReviewItem,
-    Subscription,
-    UserRoleAssignment,
 )
 from app.services.access import has_athlete_access, primary_organization_id, require_athlete_access
-from app.services.assistant import assistant_message_view, require_assistant_thread_access
 from app.services.audit import add_audit
 
 router = APIRouter(tags=["Pilot product"])
@@ -924,152 +904,6 @@ async def remove_member(
     return Response(status_code=204)
 
 
-@router.post("/consents", response_model=ConsentView, status_code=status.HTTP_201_CREATED)
-async def grant_consent(
-    payload: ConsentGrant,
-    user: User = Depends(current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    consent = await db.scalar(
-        select(Consent).where(
-            Consent.user_id == user.id,
-            Consent.scope == payload.scope,
-            Consent.version == payload.version,
-        )
-    )
-    if consent is None:
-        consent = Consent(user_id=user.id, granted_at=datetime.now(UTC), **payload.model_dump())
-        db.add(consent)
-    else:
-        consent.granted_at = datetime.now(UTC)
-        consent.revoked_at = None
-    await db.commit()
-    await db.refresh(consent)
-    return consent
-
-
-@router.get("/consents", response_model=list[ConsentView])
-async def list_consents(
-    user: User = Depends(current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    rows = await db.scalars(select(Consent).where(Consent.user_id == user.id).order_by(Consent.granted_at.desc()))
-    return rows.all()
-
-
-@router.delete("/consents/{consent_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def revoke_consent(
-    consent_id: int,
-    user: User = Depends(current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    consent = await db.scalar(select(Consent).where(Consent.id == consent_id, Consent.user_id == user.id))
-    if consent is None:
-        raise HTTPException(404, "Consentimiento no encontrado")
-    consent.revoked_at = datetime.now(UTC)
-    await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
-@router.get("/account/export")
-async def export_account(user: User = Depends(current_user), db: AsyncSession = Depends(get_db)):
-    activities = (
-        await db.scalars(select(Activity).where(Activity.athlete_id == user.id).order_by(Activity.start_time))
-    ).all()
-    observations = (
-        await db.scalars(
-            select(Observation).where(Observation.athlete_id == user.id).order_by(Observation.observed_start)
-        )
-    ).all()
-    checkins = (
-        await db.scalars(select(Checkin).where(Checkin.athlete_id == user.id).order_by(Checkin.local_date))
-    ).all()
-    complaints = (
-        await db.scalars(select(Complaint).where(Complaint.athlete_id == user.id).order_by(Complaint.id))
-    ).all()
-    messages = (
-        await db.execute(
-            select(AssistantMessage, AssistantThread)
-            .join(AssistantThread, AssistantThread.id == AssistantMessage.thread_id)
-            .where(AssistantThread.owner_id == user.id)
-            .order_by(AssistantMessage.created_at, AssistantMessage.id)
-        )
-    ).all()
-    assistant_messages = []
-    for message, thread in messages:
-        try:
-            await require_assistant_thread_access(db, user, thread)
-        except HTTPException as exc:
-            if exc.status_code not in {403, 404}:
-                raise
-            continue
-        visible = await assistant_message_view(db, user, message)
-        assistant_messages.append({key: visible[key] for key in ("author", "content", "created_at")})
-    return {
-        "generated_at": datetime.now(UTC),
-        "user": {"id": user.id, "email": user.email, "timezone": user.timezone},
-        "activities": [
-            {
-                "id": item.id,
-                "provider": item.provider,
-                "sport_type": item.sport_type,
-                "started_at": item.start_time,
-                "duration_sec": item.total_duration_sec,
-            }
-            for item in activities
-        ],
-        "observations": [ObservationView.model_validate(item).model_dump(mode="json") for item in observations],
-        "checkins": [CheckinView.model_validate(item).model_dump(mode="json") for item in checkins],
-        "complaints": [ComplaintView.model_validate(item).model_dump(mode="json") for item in complaints],
-        "assistant_messages": assistant_messages,
-    }
-
-
-@router.delete("/account", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_account(
-    payload: DeleteAccount,
-    user: User = Depends(current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    if not verify_password(payload.password, user.hashed_password):
-        raise HTTPException(401, "Contraseña incorrecta")
-    add_audit(db, actor_id=user.id, entity="user", entity_id=user.id, action="deidentify")
-    thread_ids = select(AssistantThread.id).where(AssistantThread.owner_id == user.id)
-    await db.execute(delete(AssistantConfirmation).where(AssistantConfirmation.thread_id.in_(thread_ids)))
-    await db.execute(delete(AssistantMessage).where(AssistantMessage.thread_id.in_(thread_ids)))
-    await db.execute(delete(AssistantThread).where(AssistantThread.owner_id == user.id))
-    await db.execute(delete(Activity).where(Activity.athlete_id == user.id))
-    await db.execute(delete(AthleteProfile).where(AthleteProfile.athlete_id == user.id))
-    await db.execute(delete(Observation).where(Observation.athlete_id == user.id))
-    await db.execute(delete(Checkin).where(Checkin.athlete_id == user.id))
-    await db.execute(delete(Complaint).where(Complaint.athlete_id == user.id))
-    await db.execute(delete(DailyLoad).where(DailyLoad.athlete_id == user.id))
-    await db.execute(delete(Competition).where(Competition.athlete_id == user.id))
-    await db.execute(delete(PrescribedWorkout).where(PrescribedWorkout.athlete_id == user.id))
-    await db.execute(delete(TrainingBlock).where(TrainingBlock.athlete_id == user.id))
-    await db.execute(delete(GroupMembership).where(GroupMembership.athlete_id == user.id))
-    await db.execute(delete(PlanAssignment).where(PlanAssignment.athlete_id == user.id))
-    await db.execute(delete(AthleteConnection).where(AthleteConnection.athlete_id == user.id))
-    await db.execute(delete(Consent).where(Consent.user_id == user.id))
-    await db.execute(
-        update(CoachAthleteAssignment)
-        .where((CoachAthleteAssignment.athlete_id == user.id) | (CoachAthleteAssignment.coach_id == user.id))
-        .values(status="revoked", revoked_at=datetime.now(UTC))
-    )
-    await db.execute(
-        update(OrganizationMembership).where(OrganizationMembership.user_id == user.id).values(status="revoked")
-    )
-    await db.execute(delete(UserRoleAssignment).where(UserRoleAssignment.user_id == user.id))
-    user.email = f"deleted-{user.id}-{secrets.token_hex(6)}@invalid.local"
-    user.first_name = "Cuenta"
-    user.last_name = "eliminada"
-    user.hashed_password = hash_password(secrets.token_urlsafe(48))
-    user.deleted_at = utcnow()
-    await db.execute(delete(AuthSession).where(AuthSession.user_id == user.id))
-    await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
 @router.post("/athletes/{athlete_id}/connections/intervals", response_model=ConnectionView)
 async def connect_intervals(
     athlete_id: int,
@@ -1078,30 +912,7 @@ async def connect_intervals(
     db: AsyncSession = Depends(get_db),
 ):
     await require_athlete_access(db, user, athlete_id)
-    if user.id != athlete_id and not user.is_superuser:
-        raise HTTPException(403, "El atleta autoriza su propia conexión")
-    if payload.mode == "real" and not (
-        settings.INTERVALS_CLIENT_ID and settings.INTERVALS_CLIENT_SECRET and settings.PROVIDER_TOKEN_ENCRYPTION_KEY
-    ):
-        raise HTTPException(503, "INTERVALS_CONFIGURATION_REQUIRED")
-    connection = await db.scalar(
-        select(AthleteConnection).where(
-            AthleteConnection.athlete_id == athlete_id,
-            AthleteConnection.provider == "intervals_icu",
-        )
-    )
-    if connection is None:
-        connection = AthleteConnection(
-            athlete_id=athlete_id,
-            provider="intervals_icu",
-            status="simulated" if payload.mode == "simulated" else "authorization_pending",
-            scopes=[],
-        )
-        db.add(connection)
-    else:
-        connection.status = "simulated" if payload.mode == "simulated" else "authorization_pending"
-    await db.commit()
-    return connection
+    raise HTTPException(410, "Usa /connections/intervals/{athlete_id}/authorize")
 
 
 @router.get("/athletes/{athlete_id}/connections/intervals", response_model=ConnectionView)
@@ -1129,67 +940,7 @@ async def disconnect_intervals(
     db: AsyncSession = Depends(get_db),
 ):
     await require_athlete_access(db, user, athlete_id)
-    if user.id != athlete_id and not user.is_superuser:
-        raise HTTPException(403, "El atleta revoca su propia conexión")
-    connection = await db.scalar(
-        select(AthleteConnection).where(
-            AthleteConnection.athlete_id == athlete_id,
-            AthleteConnection.provider == "intervals_icu",
-        )
-    )
-    if connection is None:
-        raise HTTPException(404, "Conexión no encontrada")
-    connection.status = "revoked"
-    connection.access_token_enc = None
-    connection.refresh_token_enc = None
-    await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
-@router.post("/admin/commercial/plans", status_code=status.HTTP_201_CREATED)
-async def create_commercial_plan(
-    payload: PlanCreate,
-    admin: User = Depends(current_superuser),
-    db: AsyncSession = Depends(get_db),
-):
-    plan = CommercialPlan(**payload.model_dump())
-    db.add(plan)
-    await db.flush()
-    add_audit(db, actor_id=admin.id, entity="commercial_plan", entity_id=plan.id, action="create")
-    await db.commit()
-    return {"id": plan.id, **payload.model_dump()}
-
-
-@router.post("/admin/commercial/subscriptions", status_code=status.HTTP_201_CREATED)
-async def create_subscription(
-    payload: SubscriptionCreate,
-    admin: User = Depends(current_superuser),
-    db: AsyncSession = Depends(get_db),
-):
-    if await db.get(CommercialPlan, payload.plan_id) is None:
-        raise HTTPException(404, "Plan no encontrado")
-    subscription = Subscription(status="active", **payload.model_dump())
-    db.add(subscription)
-    await db.flush()
-    add_audit(db, actor_id=admin.id, entity="subscription", entity_id=subscription.id, action="activate")
-    await db.commit()
-    return {"id": subscription.id, "status": subscription.status, **payload.model_dump()}
-
-
-@router.post("/admin/commercial/payments", status_code=status.HTTP_201_CREATED)
-async def record_payment(
-    payload: PaymentCreate,
-    admin: User = Depends(current_superuser),
-    db: AsyncSession = Depends(get_db),
-):
-    if await db.get(Subscription, payload.subscription_id) is None:
-        raise HTTPException(404, "Suscripción no encontrada")
-    payment = ManagedPayment(recorded_by=admin.id, **payload.model_dump())
-    db.add(payment)
-    await db.flush()
-    add_audit(db, actor_id=admin.id, entity="managed_payment", entity_id=payment.id, action="record")
-    await db.commit()
-    return {"id": payment.id, **payload.model_dump()}
+    raise HTTPException(410, "Usa DELETE /connections/intervals/{athlete_id}")
 
 
 @router.post("/recommendations", status_code=status.HTTP_201_CREATED)

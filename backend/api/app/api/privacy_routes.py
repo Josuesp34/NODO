@@ -264,7 +264,14 @@ async def create_commercial_plan(
     except IntegrityError:
         await db.rollback()
         raise HTTPException(409, "Ya existe un plan con este nombre") from None
-    return {"id": row.id}
+    return {
+        "id": row.id,
+        "name": row.name,
+        "athlete_limit": row.athlete_limit,
+        "monthly_price_cents": row.monthly_price_cents,
+        "currency": row.currency,
+        "active": row.active,
+    }
 
 
 @router.post("/admin/commercial/subscriptions", status_code=201)

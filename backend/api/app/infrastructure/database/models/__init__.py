@@ -5,8 +5,8 @@ from app.infrastructure.database.models.auth import AthleteInvitation, AuthSessi
 from app.infrastructure.database.models.base import Base
 from app.infrastructure.database.models.block import TrainingBlock
 from app.infrastructure.database.models.daily_metrics import DailyPhysiology
-from app.infrastructure.database.models.plan import PrescribedWorkout
 from app.infrastructure.database.models.operations import WorkerHeartbeat
+from app.infrastructure.database.models.plan import PrescribedWorkout
 from app.infrastructure.database.models.privacy import (
     NotificationDelivery,
     NotificationPreference,
@@ -46,21 +46,24 @@ from app.infrastructure.database.models.product import (
     Subscription,
     UserRoleAssignment,
 )
-from app.infrastructure.database.models.providers import AssistantBudget, AssistantRun, ProviderOAuthState, ProviderRecord
+from app.infrastructure.database.models.providers import (
+    AssistantBudget,
+    AssistantRun,
+    ProviderOAuthState,
+    ProviderRecord,
+)
 from app.infrastructure.database.models.telemetry import TelemetryRecord
 from app.infrastructure.database.models.user import User
 
 # Reexportados a propósito: importar este paquete registra cada modelo en el
 # metadata de SQLAlchemy, del que dependen Alembic y el bootstrap local.
 __all__ = [
-    "AssistantBudget",
-    "AssistantRun",
-    "ProviderOAuthState",
-    "ProviderRecord",
     "Activity",
     "ActivityLap",
+    "AssistantBudget",
     "AssistantConfirmation",
     "AssistantMessage",
+    "AssistantRun",
     "AssistantThread",
     "AthleteConnection",
     "AthleteGroup",
@@ -94,6 +97,8 @@ __all__ = [
     "PlanTemplate",
     "PrescribedWorkout",
     "PrivacyArtifact",
+    "ProviderOAuthState",
+    "ProviderRecord",
     "PushSubscription",
     "Recommendation",
     "ReviewItem",

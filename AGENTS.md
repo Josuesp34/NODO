@@ -37,3 +37,5 @@ Detenerse y pedirlo, nunca resolverlo por cuenta propia: registrar la app OAuth 
 ## Autorización vigente para esta entrega · 29-09-2026
 
 Brandon autorizó publicar todos los avances de NODO, abrir el PR completo, integrar las versiones y avanzar al despliegue en producción. No se requiere repetir esa aprobación. Las identidades, proyectos, facturación, dominio y configuraciones de proveedor aún deben verificarse; una autorización no sustituye accesos faltantes, términos de terceros, consentimiento ni revisión obligatoria. Mantener el NO-GO de apertura a atletas reales hasta completar `LANZAMIENTO.md`.
+
+**Restricción vigente · 30-09-2026:** Brandon aclaró que no debemos publicar, crear ni modificar recursos en Google Cloud. Vibe Conversa es otro proyecto. Esta instrucción posterior sustituye la autorización de despliegue cloud: continuar código, pruebas, PRs, integración y versiones GitHub; entregar infraestructura y runbooks preparados para que Josué realice la activación. No ejecutar Terraform apply ni workflows de despliegue.

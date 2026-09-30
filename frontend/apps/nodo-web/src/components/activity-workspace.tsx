@@ -69,6 +69,7 @@ type Comparison = {
     formula_version: string;
   }[];
 };
+const providerName = (provider: string) => ({ manual_fit: "FIT manual", intervals_icu: "Intervals.icu" })[provider as "manual_fit" | "intervals_icu"] ?? "Origen externo";
 const stateLabel: Record<string, string> = {
   comparable: "Comparación disponible",
   insufficient_data: "Datos insuficientes",
@@ -164,7 +165,7 @@ export function ActivitiesWorkspace({
                 <span>
                   {item.local_date} · {item.timezone}
                 </span>
-                <StatusBadge>{item.provider}</StatusBadge>
+                <StatusBadge>{providerName(item.provider)}</StatusBadge>
               </div>
               <p>
                 {measured(item.duration_sec, "s")} ·{" "}
@@ -389,7 +390,7 @@ export function ActivityDetailWorkspace({
         <>
           <p>
             {sports[detail.sport_type]} · {detail.local_date} ·{" "}
-            {detail.timezone} · {detail.provider}
+            {detail.timezone} · {providerName(detail.provider)}
           </p>
           <p>
             {measured(detail.duration_sec, "s")} ·{" "}

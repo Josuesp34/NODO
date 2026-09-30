@@ -925,9 +925,4 @@ def test_withdrawn_athlete_can_export_prior_own_chat_but_not_resume_processing(p
     assert api.client.delete(f"/api/v1/consents/{consent.json()['id']}", headers=headers).status_code == 204
     export = api.client.get("/api/v1/account/export", headers=headers)
     assert export.status_code == 200 and "Synthetic prior personal context" in export.text
-    assert (
-        api.client.get(
-            f"/api/v1/athletes/{user_id}/profile", headers=headers
-        ).status_code
-        == 403
-    )
+    assert api.client.get(f"/api/v1/athletes/{user_id}/profile", headers=headers).status_code == 403

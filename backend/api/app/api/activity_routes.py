@@ -26,9 +26,9 @@ from app.infrastructure.database.models.product import (
     IngestionEvent,
     Job,
 )
+from app.services import object_store
 from app.services.access import require_athlete_access
 from app.services.audit import add_audit
-from app.services import object_store
 
 router = APIRouter(prefix="/athletes/{athlete_id}/activities", tags=["Activities"])
 
@@ -113,7 +113,7 @@ async def upload_fit(
         )
     )
     if existing is not None:
-        if object_store.enabled():
+        if object_store.enabled() or settings.ENVIRONMENT != "development":
             try:
                 await object_store.put_file(f"fit/{athlete_id}/{file_hash}.fit", content)
             except object_store.ObjectStoreError:

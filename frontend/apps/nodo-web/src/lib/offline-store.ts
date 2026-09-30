@@ -5,6 +5,13 @@ const prefix = "nodo.offline.";
 const activeKey = `${prefix}active`;
 export const offlineLifetimeMs = 24 * 60 * 60 * 1000;
 const clearEvent = "nodo:offline-cleared";
+const sessionEventKey = "nodo.session.invalidated";
+
+export function invalidateOtherSessions() {
+  clearOfflineData();
+  window.dispatchEvent(new Event(clearEvent));
+  try { window.localStorage.setItem(sessionEventKey, `${Date.now()}:${crypto.randomUUID()}`); } catch { /* Sin almacenamiento. */ }
+}
 
 export function saveWorkouts(userId: number, workouts: Workout[], timezone = "America/Mexico_City") {
   try {
@@ -45,6 +52,7 @@ export function clearOfflineData() {
 
 export function observeOfflineInvalidation(invalidate: () => void) {
   const storage = (event: StorageEvent) => {
+    if (event.key === sessionEventKey) { invalidate(); return; }
     if (event.key?.startsWith(prefix) && (event.newValue === null || (event.key === activeKey && event.oldValue !== event.newValue))) invalidate();
   };
   window.addEventListener(clearEvent, invalidate);

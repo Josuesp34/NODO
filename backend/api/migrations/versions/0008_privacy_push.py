@@ -9,7 +9,7 @@ from alembic import op
 from sqlalchemy.dialects.postgresql import JSONB
 
 revision = "0008_privacy_push"
-down_revision = "0005_password_reset"
+down_revision = "0007_providers_assistant"
 branch_labels = None
 depends_on = None
 

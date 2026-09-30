@@ -28,7 +28,7 @@ async def operations(admin: User = Depends(current_superuser), db: AsyncSession 
     if oldest is not None and oldest.tzinfo is None:
         oldest = oldest.replace(tzinfo=UTC)
     return {
-        "database_revision": await db.scalar(text("SELECT version_num FROM alembic_version")),
+        "alembic_revisions": list((await db.scalars(text("SELECT version_num FROM alembic_version"))).all()),
         "observed_at": now,
         "worker_last_seen_at": last_seen,
         "worker_recent": (

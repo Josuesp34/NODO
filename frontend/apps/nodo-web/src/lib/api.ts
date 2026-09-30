@@ -32,6 +32,7 @@ export async function nodoRequest<T>(path: string, options: RequestOptions = {})
     body: requestBody,
   });
 
+  if (options.signal?.aborted) throw new DOMException("Petición cancelada", "AbortError");
   if (!response.ok) {
     if (response.status === 401 || response.status === 403) clearOfflineData();
     const payload = (await response.json().catch(() => null)) as { detail?: unknown; message?: string } | null;

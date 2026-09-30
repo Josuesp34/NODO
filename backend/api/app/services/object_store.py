@@ -67,6 +67,8 @@ async def put_file(key: str, content: bytes) -> None:
             temporary = None
             try:
                 target.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+                if target.exists() and target.stat().st_size == len(content) and target.read_bytes() == content:
+                    return
                 with tempfile.NamedTemporaryFile(dir=target.parent, delete=False) as stream:
                     temporary = Path(stream.name)
                     stream.write(content)
@@ -85,11 +87,12 @@ async def put_file(key: str, content: bytes) -> None:
         async with httpx.AsyncClient(timeout=30) as client:
             result = await client.post(
                 url,
-                params={"uploadType": "media", "name": key},
+                params={"uploadType": "media", "name": key, "ifGenerationMatch": "0"},
                 content=content,
                 headers={**await authorization(), "Content-Type": "application/octet-stream"},
             )
-            result.raise_for_status()
+            if result.status_code != 412:  # El mismo hash ya existe; no renueva su retención.
+                result.raise_for_status()
     except (httpx.HTTPError, ObjectStoreError):
         raise ObjectStoreError("No se pudo guardar el archivo privado") from None
 
@@ -170,7 +173,7 @@ async def inventory(prefix: str):
                 for item in payload.get("items", []):
                     yield (
                         item["name"],
-                        datetime.fromisoformat(item["updated"].replace("Z", "+00:00")),
+                        datetime.fromisoformat(item.get("timeCreated", item["updated"]).replace("Z", "+00:00")),
                         item["generation"],
                     )
                 page = payload.get("nextPageToken")
@@ -191,13 +194,13 @@ async def delete_athlete_files(athlete_id: int) -> int:
     return count
 
 
-async def prune_expired_files(before: datetime) -> int:
-    if before.tzinfo is None:
+async def prune_expired_files(before: datetime, export_before: datetime | None = None) -> int:
+    if before.tzinfo is None or (export_before is not None and export_before.tzinfo is None):
         raise ObjectStoreError("Retención requiere fecha con zona horaria")
     count = 0
     for kind in ("fit", "export"):
         async for key, updated, generation in inventory(f"{kind}/"):
-            if updated < before:
+            if updated < (export_before if kind == "export" and export_before is not None else before):
                 await delete_file(key, generation)
                 count += 1
     return count

@@ -10,7 +10,7 @@ import { pushSupported, subscribeDevice, unsubscribeDevice } from "@/lib/push-cl
 import { capabilitiesFor } from "@/lib/contracts";
 
 function SettingsNav() {
-  return <nav className="cluster" aria-label="Secciones de ajustes"><Link className="button" href="/settings/account">Cuenta</Link><Link className="button" href="/settings/notifications">Notificaciones</Link><Link className="button" href="/settings/privacy">Privacidad</Link><Link className="button" href="/settings/data">Datos</Link><Link className="button" href="/settings/commercial">Piloto</Link></nav>;
+  return <nav className="cluster" aria-label="Secciones de ajustes"><Link className="button" href="/settings/account">Cuenta</Link><Link className="button" href="/settings/notifications">Notificaciones</Link><Link className="button" href="/settings/privacy">Privacidad</Link><Link className="button" href="/settings/data">Datos</Link><Link className="button" href="/settings/commercial">Piloto</Link><Link className="button" href="/settings/ai-costs">Uso de IA</Link></nav>;
 }
 
 export function AccountSettings() {

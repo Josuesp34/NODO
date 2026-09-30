@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { clearOfflineData, observeOfflineInvalidation } from "@/lib/offline-store";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { clearOfflineData, invalidateOtherSessions, observeOfflineInvalidation } from "@/lib/offline-store";
 import { capabilitiesFor, type Capability, type Identity } from "@/lib/contracts";
 import { Brand, LoadingState } from "./ui";
 import { OfflineWorkspace } from "./offline-workspace";
@@ -47,9 +47,10 @@ export function ProductShell({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [offline, setOffline] = useState(false);
   const [validation, setValidation] = useState(0);
+  const leaving = useRef(false);
 
   useEffect(() => {
-    const revalidate = () => { setSession(null); setValidation((value) => value + 1); };
+    const revalidate = () => { setSession(null); if (!leaving.current) setValidation((value) => value + 1); };
     const disconnected = () => { setSession(null); setOffline(true); };
     const unsubscribe = observeOfflineInvalidation(revalidate);
     window.addEventListener("offline", disconnected); window.addEventListener("online", revalidate);
@@ -60,7 +61,7 @@ export function ProductShell({ children }: { children: React.ReactNode }) {
     setError(null); setOffline(false);
     const controller = new AbortController();
     void fetch("/api/session/me", { cache: "no-store", signal: controller.signal }).then(async (response) => {
-      if (controller.signal.aborted) return;
+      if (controller.signal.aborted || leaving.current) return;
       if (response.status === 401) {
         clearOfflineData();
         router.replace(`/login?next=${encodeURIComponent(pathname)}`);
@@ -69,9 +70,9 @@ export function ProductShell({ children }: { children: React.ReactNode }) {
       if (response.status === 403) { clearOfflineData(); setSession(null); throw new Error("Esta cuenta no tiene acceso activo."); }
       if (!response.ok) throw new Error("No pudimos validar tu sesión.");
       const identity = await response.json() as Identity;
-      if (!controller.signal.aborted) setSession({ identity, capabilities: capabilitiesFor(identity) });
+      if (!controller.signal.aborted && !leaving.current) setSession({ identity, capabilities: capabilitiesFor(identity) });
     }).catch((reason: unknown) => {
-      if (controller.signal.aborted) return;
+      if (controller.signal.aborted || leaving.current) return;
       if (!navigator.onLine || reason instanceof TypeError) setOffline(true);
       else setError(reason instanceof Error ? reason.message : "No pudimos validar tu sesión.");
     });
@@ -84,10 +85,12 @@ export function ProductShell({ children }: { children: React.ReactNode }) {
   const context = useMemo(() => session, [session]);
 
   async function logout() {
+    leaving.current = true;
+    setSession(null);
     clearOfflineData();
     await fetch("/api/session/logout", { method: "POST" }).catch(() => undefined);
+    invalidateOtherSessions();
     router.replace("/");
-    router.refresh();
   }
 
   if (offline) return <main id="contenido"><OfflineWorkspace /></main>;

@@ -9,8 +9,8 @@ from app.core.security import hash_password
 from app.infrastructure.database.models import Activity, Base, User
 from app.infrastructure.database.models.product import DailyLoad, Job
 from app.infrastructure.database.models.user import UserRole
-from app.services.jobs import execute_job, recompute_daily_load
 from app.services import jobs as worker
+from app.services.jobs import execute_job, recompute_daily_load
 
 
 def test_recompute_daily_load_includes_rest_days():
@@ -123,19 +123,20 @@ def test_claimed_batch_does_not_send_deleted_second_job(monkeypatch):
             await db.commit()
             claimed = await worker.claim_jobs(db, "first-worker")
             assert len(claimed) == 2
+            first_id, second_id = claimed[0].id, claimed[1].id
 
             async def send(session, job):
                 calls.append(job.id)
                 async with sessions() as other:
-                    await other.execute(delete(Job).where(Job.id == claimed[1].id))
+                    await other.execute(delete(Job).where(Job.id == second_id))
                     await other.commit()
                 return True
 
             monkeypatch.setattr(worker, "send_queued_email", send)
             await execute_job(db, claimed[0])
             await execute_job(db, claimed[1])
-            assert calls == [claimed[0].id]
-            assert (await db.get(Job, claimed[0].id)).status == "completed"
+            assert calls == [first_id]
+            assert (await db.get(Job, first_id)).status == "completed"
         await engine.dispose()
 
     asyncio.run(scenario())

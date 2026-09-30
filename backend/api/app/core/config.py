@@ -66,6 +66,7 @@ class Settings(BaseSettings):
     STORAGE_BUCKET: str = ""
     STORAGE_LOCAL_PATH: str = ""
     DATA_RETENTION_DAYS: int = Field(default=365, ge=30)
+    EXPORT_RETENTION_DAYS: int = Field(default=30, ge=1, le=365)
 
     @property
     def cors_origins(self) -> list[str]:

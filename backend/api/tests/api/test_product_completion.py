@@ -355,3 +355,20 @@ def test_fit_distance_missing_zero_and_counter_delta():
     assert metrics["distance_m"] == 400 and metrics["distance_source"] == "record_counter_delta"
     df["distance"] = [500, 100]
     assert extract_session_metrics(df)["distance_m"] is None
+
+
+def test_multirole_athlete_does_not_gain_own_draft_access(pilot_api):
+    from app.infrastructure.database.models.product import UserRoleAssignment
+
+    coach, aid, own, _other = setup(pilot_api)
+    response = pilot_api.post(f"/api/v1/athletes/{aid}/workouts", headers=coach, json=payload())
+    assert response.status_code == 201
+
+    async def grant_role(db):
+        db.add(UserRoleAssignment(user_id=aid, role="coach"))
+        await db.commit()
+
+    in_database(pilot_api, grant_role)
+    path = f"/api/v1/athletes/{aid}/workouts?start=2026-09-20&end=2026-09-21"
+    assert len(pilot_api.get(path, headers=coach).json()) == 1
+    assert pilot_api.get(path, headers=own).json() == []

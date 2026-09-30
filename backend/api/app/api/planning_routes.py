@@ -149,7 +149,7 @@ async def list_workouts(
             PrescribedWorkout.scheduled_date < end_at,
             *(
                 []
-                if "coach" in await roles_for(db, user.id) or user.is_superuser
+                if (user.id != athlete_id and "coach" in await roles_for(db, user.id)) or user.is_superuser
                 else [PrescribedWorkout.status == "published"]
             ),
         )

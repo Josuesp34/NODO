@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import current_coach, current_user
+from app.api.insight_routes import router as insight_router
 from app.api.planning_routes import check_block, workout_view
 from app.api.product_schemas import (
     CheckinUpsert,
@@ -63,8 +64,10 @@ from app.infrastructure.database.models.product import (
 )
 from app.services.access import has_athlete_access, primary_organization_id, require_athlete_access
 from app.services.audit import add_audit
+from app.services.product_notifications import notify_assigned_coaches, queue_product_event
 
 router = APIRouter(tags=["Pilot product"])
+router.include_router(insight_router)
 
 
 def serialize_steps(value) -> list[dict]:
@@ -309,6 +312,15 @@ async def create_complaint(
         action="report",
         after={"intensity_0_10": complaint.intensity_0_10, "limits_movement": complaint.limits_movement},
     )
+    await notify_assigned_coaches(
+        db,
+        athlete_id=athlete_id,
+        category="review",
+        event_key=f"complaint:{complaint.id}:{complaint.version}",
+        entity="complaint",
+        entity_id=complaint.id,
+        entity_version=complaint.version,
+    )
     await db.commit()
     await db.refresh(complaint)
     return complaint
@@ -347,6 +359,15 @@ async def update_complaint(
             complaint,
             "high" if worsened or payload.limits_movement or payload.intensity_0_10 >= 7 else "normal",
             "La molestia empeoró o se reabrió",
+        )
+        await notify_assigned_coaches(
+            db,
+            athlete_id=complaint.athlete_id,
+            category="review",
+            event_key=f"complaint:{complaint.id}:{complaint.version}",
+            entity="complaint",
+            entity_id=complaint.id,
+            entity_version=complaint.version,
         )
     add_audit(
         db,
@@ -980,6 +1001,16 @@ async def create_recommendation(
         model_version="simulated-v1",
     )
     db.add(recommendation)
+    await db.flush()
+    await queue_product_event(
+        db,
+        recipient_id=coach.id,
+        athlete_id=payload.athlete_id,
+        category="review",
+        event_key=f"proposal:{recommendation.id}:pending",
+        entity="recommendation",
+        entity_id=recommendation.id,
+    )
     await db.commit()
     await db.refresh(recommendation)
     return {"id": recommendation.id, "status": recommendation.status}

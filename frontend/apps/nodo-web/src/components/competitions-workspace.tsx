@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { nodoRequest, problemFrom } from "@/lib/api";
 import type { Sport } from "@/lib/contracts";
@@ -78,6 +79,14 @@ export function CompetitionsWorkspace({
   return (
     <section className="card stack" style={{ marginTop: 18 }}>
       <h2>Competencias objetivo</h2>
+      {editable ? (
+        <Link
+          className="button"
+          href={`/coach/athletes/${athleteId}/scenarios`}
+        >
+          Comparar escenarios de carga
+        </Link>
+      ) : null}
       {error ? <ErrorState message={error} retry={load} /> : null}
       {items.map((c) => (
         <article className="stack" key={c.id}>

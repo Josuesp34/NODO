@@ -12,6 +12,7 @@ from app.domain.comparison import local_day
 from app.infrastructure.database.models import PrescribedWorkout, TrainingBlock, User
 from app.services.access import roles_for
 from app.services.audit import add_audit
+from app.services.product_notifications import queue_product_event
 
 router = APIRouter(prefix="/athletes/{athlete_id}", tags=["Planning"])
 
@@ -255,6 +256,16 @@ async def publish_workout(
         entity_id=workout_id,
         action="publish",
         after={"version": published.version},
+    )
+    await queue_product_event(
+        db,
+        recipient_id=athlete_id,
+        athlete_id=athlete_id,
+        category="plan",
+        event_key=f"plan-published:{published.id}:{published.version}",
+        entity="workout",
+        entity_id=published.id,
+        entity_version=published.version,
     )
     await db.commit()
     return workout_view(published)

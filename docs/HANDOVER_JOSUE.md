@@ -122,6 +122,7 @@ Los trabajos P4/P5/P6 pueden avanzar en paralelo al staging cuando existan sus d
 - [ ] Resend con dominio verificado y remitente.
 - [ ] Proveedor/modelo IA, ubicación, tratamiento de datos y techo de gasto.
 - [ ] Accesos nominales de Josué y procedimiento de soporte.
+- [ ] Propietario GitHub: protecciones/revisores, Environments/WIF y Dependency Graph/permisos del review nativo. Las auditorías directas siguen siendo obligatorias.
 
 Secretos por Secret Manager o canal seguro; WhatsApp y Git reciben únicamente enlaces, identificadores no secretos y estado. No repetir la aprobación general de producción ya recibida: pedir sólo la información faltante o una excepción material de costo/alcance.
 

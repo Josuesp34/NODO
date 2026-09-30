@@ -16,7 +16,13 @@ La frontera pública es la PWA/BFF. Cookie de sesión `httpOnly`, `Secure`, `Sam
 - Artifact Registry con tags inmutables e imágenes desplegadas por digest.
 - buckets con acceso uniforme, prevención de acceso público y `force_destroy=false`.
 - Cloud SQL PostgreSQL 16 con IP privada, backups y PITR.
-- acciones de CI fijadas por SHA, dependency review, OSV, Trivy y CodeQL.
+- acciones de CI fijadas por SHA, auditoría de dependencias resueltas, OSV, Trivy y CodeQL.
+
+## Control de dependencias en CI
+
+El control obligatorio audita npm de runtime y árbol completo, además de la resolución Python de runtime y desarrollo congelada antes de instalar las herramientas. Cualquier vulnerabilidad, paquete omitido, resultado incompleto o error de red bloquea el release. No hay excepciones por severidad en npm/pip-audit.
+
+Dependency Review nativo permanece pendiente porque su API devuelve 403; su job omitido no significa aprobación. El propietario puede activarlo mediante `NATIVE_DEPENDENCY_REVIEW_ENABLED=true` después de habilitar Dependency Graph y verificar permisos. OSV y CodeQL siguen activos; Trivy 0.74.0 fija la acción por SHA y bloquea HIGH/CRITICAL, también cuando no existe corrección. Los permisos/configuración de repositorio quedan como pendiente operativo, separado de las auditorías directas.
 
 ## Reglas de aplicación
 

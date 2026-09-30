@@ -4,7 +4,7 @@ Estado: diseño propuesto, salvo lo identificado como implementado en `ESTADO_TE
 
 ## Estructura
 
-Backend modular en FastAPI, PostgreSQL y TimescaleDB para series temporales. NODO será la plataforma web y móvil de cada persona. NODO Lab será su módulo de entrenador; ambas experiencias usarán la misma API, cuenta y reglas de acceso. La identidad multirol se detalla en `ADR/0001-multi-role-identity.md`. Se mantiene la carpeta `backend/fit-parser` para no añadir una mudanza al refactor inicial; el backend puede ampliarse por módulos antes de dividirlo en servicios. Kubernetes no es necesario para este piloto.
+Backend modular en FastAPI, PostgreSQL y TimescaleDB para series temporales. NODO será la plataforma web y móvil de cada persona. NODO Lab será su módulo de entrenador; ambas experiencias usarán la misma API, cuenta y reglas de acceso. La identidad multirol se detalla en `ADR/0001-multi-role-identity.md`. El backend vive en `backend/api`; la carpeta se llamó `backend/fit-parser` hasta la fase F0 del plan de ejecución, cuando dejó de ser sólo un extractor de archivos FIT. El backend puede ampliarse por módulos antes de dividirlo en servicios. Kubernetes no es necesario para este piloto.
 
 - `api`: HTTP, validación del contrato y autenticación/autorización.
 - `domain`: conceptos y cálculos independientes de la infraestructura.

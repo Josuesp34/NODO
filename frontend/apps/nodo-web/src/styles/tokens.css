@@ -1,0 +1,20 @@
+:root {
+  --ink: #101110;
+  --surface: #171916;
+  --surface-raised: #1d201c;
+  --paper: #f2f0e8;
+  --muted: #a7aaa2;
+  --subtle: #858980;
+  --line: #3a3e35;
+  --signal: #d7ff3f;
+  --signal-soft: #efffb1;
+  --coral: #ff734f;
+  --coral-soft: #ffad91;
+  --info: #75bfff;
+  --success: #8ae0aa;
+  --shadow: 0 28px 90px rgb(0 0 0 / 35%);
+  --radius: 2px;
+  --content: 1240px;
+  --font-sans: "Arial Nova", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}

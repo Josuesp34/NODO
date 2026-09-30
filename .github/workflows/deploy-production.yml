@@ -1,0 +1,118 @@
+name: Promote production
+
+on:
+  workflow_dispatch:
+    inputs:
+      api_image:
+        description: "Referencia completa API promovida desde staging, terminada en @sha256:<64 hex>"
+        required: true
+        type: string
+      pwa_image:
+        description: "Referencia completa PWA promovida desde staging, terminada en @sha256:<64 hex>"
+        required: true
+        type: string
+      confirm:
+        description: "Escribir PROMOTE-PRODUCTION después de aprobación humana"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    if: inputs.confirm == 'PROMOTE-PRODUCTION'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Validate immutable inputs
+        env:
+          API_IMAGE: ${{ inputs.api_image }}
+          PWA_IMAGE: ${{ inputs.pwa_image }}
+          SOURCE_IMAGE_PREFIX: ${{ vars.SOURCE_IMAGE_PREFIX }}
+        run: bash ops/validate-release.sh digests
+      - id: auth
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+          token_format: access_token
+      - uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f
+      - name: Resolve promotion registries
+        id: registries
+        env:
+          API_IMAGE: ${{ inputs.api_image }}
+          PWA_IMAGE: ${{ inputs.pwa_image }}
+        run: |
+          printf 'api=%s\n' "${API_IMAGE%%/*}" >> "$GITHUB_OUTPUT"
+          printf 'pwa=%s\n' "${PWA_IMAGE%%/*}" >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
+        with:
+          registry: ${{ steps.registries.outputs.api }}
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
+        if: steps.registries.outputs.pwa != steps.registries.outputs.api
+        with:
+          registry: ${{ steps.registries.outputs.pwa }}
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+      - name: Scan promoted API image
+        uses: aquasecurity/trivy-action@d2a0b60797ff03db6132bd4e2b293f9b37081297
+        with:
+          version: v0.74.0
+          cache: false
+          image-ref: ${{ inputs.api_image }}
+          format: table
+          exit-code: "1"
+          severity: HIGH,CRITICAL
+          ignore-unfixed: false
+      - name: Scan promoted PWA image
+        uses: aquasecurity/trivy-action@d2a0b60797ff03db6132bd4e2b293f9b37081297
+        with:
+          version: v0.74.0
+          cache: false
+          image-ref: ${{ inputs.pwa_image }}
+          format: table
+          exit-code: "1"
+          severity: HIGH,CRITICAL
+          ignore-unfixed: false
+      - name: Migrate before shifting traffic
+        env:
+          API_IMAGE: ${{ inputs.api_image }}
+        run: |
+          gcloud run jobs update "${{ vars.MIGRATION_JOB }}" --image "$API_IMAGE" --project "${{ vars.GCP_PROJECT_ID }}" --region "${{ vars.GCP_REGION }}" --quiet
+          gcloud run jobs execute "${{ vars.MIGRATION_JOB }}" --project "${{ vars.GCP_PROJECT_ID }}" --region "${{ vars.GCP_REGION }}" --wait
+      - name: Deploy exact staging digests
+        env:
+          API_IMAGE: ${{ inputs.api_image }}
+          PWA_IMAGE: ${{ inputs.pwa_image }}
+        run: |
+          gcloud run services update "${{ vars.API_SERVICE }}" --image "$API_IMAGE" --project "${{ vars.GCP_PROJECT_ID }}" --region "${{ vars.GCP_REGION }}" --quiet
+          gcloud run services update "${{ vars.PWA_SERVICE }}" --image "$PWA_IMAGE" --project "${{ vars.GCP_PROJECT_ID }}" --region "${{ vars.GCP_REGION }}" --quiet
+          if [[ "${{ vars.WORKER_ENABLED }}" == "true" ]]; then
+            gcloud beta run worker-pools update "${{ vars.WORKER_POOL }}" --image "$API_IMAGE" --project "${{ vars.GCP_PROJECT_ID }}" --region "${{ vars.GCP_REGION }}" --quiet
+          fi
+      - name: Smoke test production
+        env:
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          GCP_REGION: ${{ vars.GCP_REGION }}
+          API_SERVICE: ${{ vars.API_SERVICE }}
+          PWA_SERVICE: ${{ vars.PWA_SERVICE }}
+        run: bash ops/smoke-production.sh
+      - name: Release evidence
+        env:
+          API_IMAGE: ${{ inputs.api_image }}
+          PWA_IMAGE: ${{ inputs.pwa_image }}
+        run: printf '%s\n' "commit=${GITHUB_SHA}" "api_image=${API_IMAGE}" "pwa_image=${PWA_IMAGE}" > release-evidence.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: production-release-evidence-${{ github.run_id }}
+          path: release-evidence.txt
+          retention-days: 90

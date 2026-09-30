@@ -1,0 +1,61 @@
+# Entorno exclusivamente local. Copiar .env.example a .env antes de arrancar.
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./app:/app/app
+    environment:
+      ENVIRONMENT: development
+      DATABASE_URL: ${DOCKER_DATABASE_URL:?Configurar DOCKER_DATABASE_URL en .env}
+      ALLOW_COACH_REGISTRATION: ${ALLOW_COACH_REGISTRATION:-false}
+      ALLOW_SUPERUSER_BOOTSTRAP: ${ALLOW_SUPERUSER_BOOTSTRAP:-false}
+      DEV_SUPERUSER_BOOTSTRAP_TOKEN: ${DEV_SUPERUSER_BOOTSTRAP_TOKEN:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-}
+      EMAIL_QUEUE_KEY: ${EMAIL_QUEUE_KEY:-}
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost:3000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./app:/app/app
+    environment:
+      ENVIRONMENT: development
+      DATABASE_URL: ${DOCKER_DATABASE_URL:?Configurar DOCKER_DATABASE_URL en .env}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-}
+      EMAIL_QUEUE_KEY: ${EMAIL_QUEUE_KEY:-}
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost:3000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: python -m app.services.jobs
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?Configurar POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:?Configurar POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Configurar POSTGRES_PASSWORD}
+      PGDATA: /var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"${POSTGRES_USER}\" -d \"${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+volumes:
+  postgres_data:

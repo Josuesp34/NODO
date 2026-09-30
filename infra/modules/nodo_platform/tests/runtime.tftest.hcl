@@ -20,9 +20,14 @@ variables {
 
 run "private_storage_and_disabled_providers" {
   command = plan
+  variables { export_retention_days = 42 }
   assert {
     condition     = local.api_runtime_env.STORAGE_BACKEND == "gcs" && local.worker_runtime_env.STORAGE_BUCKET == google_storage_bucket.fit.name
     error_message = "API/worker require the same configured private GCS bucket."
+  }
+  assert {
+    condition     = local.api_runtime_env.EXPORT_RETENTION_DAYS == "42" && local.worker_runtime_env.EXPORT_RETENTION_DAYS == "42"
+    error_message = "Runtime export TTL must agree with the configured lifecycle, including non-default values."
   }
   assert {
     condition     = google_storage_bucket.fit.soft_delete_policy[0].retention_duration_seconds == 0 && google_storage_bucket.exports.soft_delete_policy[0].retention_duration_seconds == 0 && google_storage_bucket.logical_backups.soft_delete_policy[0].retention_duration_seconds == 604800

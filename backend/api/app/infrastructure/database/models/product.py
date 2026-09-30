@@ -95,6 +95,7 @@ class AthleteProfile(Base, TimestampMixin):
 class Competition(Base, TimestampMixin):
     __tablename__ = "competitions"
     id: Mapped[int] = mapped_column(primary_key=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
     athlete_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     coach_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -169,6 +170,7 @@ class Checkin(Base, TimestampMixin):
 class Complaint(Base, TimestampMixin):
     __tablename__ = "complaints"
     id: Mapped[int] = mapped_column(primary_key=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
     athlete_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     zone: Mapped[str] = mapped_column(String(120), nullable=False)
     laterality: Mapped[str] = mapped_column(String(20), nullable=False)
@@ -194,6 +196,7 @@ class ComplaintUpdate(Base, TimestampMixin):
 class ReviewItem(Base, TimestampMixin):
     __tablename__ = "review_items"
     id: Mapped[int] = mapped_column(primary_key=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
     athlete_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     complaint_id: Mapped[int | None] = mapped_column(ForeignKey("complaints.id", ondelete="CASCADE"), nullable=True)
     kind: Mapped[str] = mapped_column(String(40), nullable=False)
@@ -216,6 +219,7 @@ class AthleteGroup(Base, TimestampMixin):
 class GroupMembership(Base, TimestampMixin):
     __tablename__ = "group_memberships"
     id: Mapped[int] = mapped_column(primary_key=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
     group_id: Mapped[int] = mapped_column(ForeignKey("athlete_groups.id", ondelete="CASCADE"), index=True)
     athlete_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     overrides: Mapped[dict] = mapped_column(JSON_VALUE, default=dict)
@@ -234,6 +238,7 @@ class PlanTemplate(Base, TimestampMixin):
 
 
 class PlanAssignment(Base, TimestampMixin):
+    workout_refs: Mapped[dict] = mapped_column(JSON_VALUE, default=dict, server_default="{}")
     __tablename__ = "plan_assignments"
     id: Mapped[int] = mapped_column(primary_key=True)
     template_id: Mapped[int] = mapped_column(ForeignKey("plan_templates.id", ondelete="CASCADE"), index=True)
@@ -358,6 +363,7 @@ class Recommendation(Base, TimestampMixin):
 
 class Decision(Base, TimestampMixin):
     __tablename__ = "decisions"
+    __table_args__ = (UniqueConstraint("recommendation_id", name="uq_decision_recommendation"),)
     id: Mapped[int] = mapped_column(primary_key=True)
     recommendation_id: Mapped[int] = mapped_column(ForeignKey("recommendations.id", ondelete="CASCADE"), index=True)
     actor_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))

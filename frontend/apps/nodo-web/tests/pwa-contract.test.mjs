@@ -73,9 +73,12 @@ test("los adapters de producto respetan los contratos autenticados actuales", as
   assert.match(athlete, /athletes\/\$\{identity\.id\}\/checkins\/\$\{form\.local_date\}/);
   assert.match(athlete, /athletes\/\$\{identity\.id\}\/activities\/fit/);
   assert.match(coach, /review-items\/\$\{item\.id\}\/decision/);
-  assert.match(coach, /recommendations\/\$\{item\.id\}\/decision/);
-  assert.match(coach, /nodoRequest<Recommendation\[\]>\("recommendations"\)/);
-  assert.match(coach, /nodoRequest<NamedResource\[\]>\(contract\.endpoint\)/);
+  const recommendations = await source("src/components/recommendations-workspace.tsx");
+  const resources = await source("src/components/resources-workspace.tsx");
+  assert.match(recommendations, /recommendations\/\$\{p\.id\}\/decision/);
+  assert.match(recommendations, /nodoRequest<Proposal\[\]>\("recommendations"\)/);
+  assert.match(resources, /nodoRequest<Template\[\]>\("templates"\)/);
+  assert.match(resources, /nodoRequest<Group\[\]>\("groups"\)/);
   assert.match(settings, /nodoRequest<Consent\[\]>\("consents"\)/);
   assert.match(settings, /account\/export/);
   assert.match(settings, /ELIMINAR MI CUENTA/);

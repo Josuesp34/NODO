@@ -26,8 +26,19 @@ def extract_session_metrics(df: pd.DataFrame, session: dict | None = None) -> di
     max_hr = valid_number(session.get("max_heart_rate"), minimum=1)
     if max_hr is None and not hr.empty:
         max_hr = float(hr.max())
+    distance = valid_number(session.get("total_distance"))
+    distance_source = "session" if distance is not None else "not_observed"
+    if distance is None:
+        records = pd.to_numeric(df.get("distance", pd.Series(dtype=float)), errors="coerce").dropna()
+        if len(records) >= 2 and records.map(math.isfinite).all() and records.is_monotonic_increasing:
+            distance = float(records.iloc[-1] - records.iloc[0])
+            distance_source = "record_counter_delta"
+    speed = valid_number(session.get("enhanced_avg_speed", session.get("avg_speed")))
     return {
         "avg_hr": avg_hr,
+        "distance_m": distance,
+        "distance_source": distance_source,
+        "avg_speed_mps": speed,
         "max_hr": int(max_hr) if max_hr is not None else None,
         "duration_min": duration / 60,
         "duration_source": "session_timer" if timer is not None else "record_elapsed",

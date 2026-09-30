@@ -36,7 +36,7 @@ export type Block = {
   end_date: string;
 };
 
-export type Sport = "running" | "cycling" | "swimming";
+export type Sport = "running" | "cycling" | "swimming" | "triathlon";
 export type StepKind = "warmup" | "work" | "recovery" | "cooldown";
 export type TargetMetric = "pace" | "power" | "heart_rate" | "rpe";
 export type TargetUnit = "sec_per_km" | "sec_per_100m" | "watts" | "bpm" | "rpe_0_10";

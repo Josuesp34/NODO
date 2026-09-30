@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Brand } from "@/components/ui";
+import { invalidateOtherSessions } from "@/lib/offline-store";
 
 export default function ActivatePage() {
   const router = useRouter();
@@ -18,7 +19,8 @@ export default function ActivatePage() {
         const payload = await response.json().catch(() => null) as { detail?: string } | null;
         throw new Error(response.status === 400 ? "La invitación expiró, ya se utilizó o no es válida." : payload?.detail ?? "No fue posible activar la cuenta.");
       }
-      router.replace("/athlete/today"); router.refresh();
+      invalidateOtherSessions();
+      router.replace("/athlete/today");
     } catch (reason) { setError(reason instanceof Error ? reason.message : "No fue posible activar la cuenta."); }
     finally { setSubmitting(false); }
   }

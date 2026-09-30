@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { runInNewContext } from "node:vm";
 
 const root = new URL("../", import.meta.url);
 const source = (path) => readFile(new URL(path, root), "utf8");
@@ -25,7 +26,23 @@ test("la PWA declara manifest, service worker y fallback offline", async () => {
   assert.match(manifest, /display:\s*"standalone"/);
   assert.match(worker, /\/offline/);
   assert.match(worker, /CLEAR_AUTH_CACHE/);
-  assert.doesNotMatch(worker, /\/api\/.+cache\.put/s);
+  const handlers = {};
+  let cacheWrites = 0;
+  runInNewContext(worker, {
+    URL,
+    self: { addEventListener: (name, handler) => { handlers[name] = handler; }, location: { origin: "https://nodo.test" } },
+    caches: { open: async () => ({ match: async () => null, put: async () => { cacheWrites++; } }) },
+    fetch: async () => ({ ok: true, clone: () => ({}) }),
+  });
+  for (const path of ["/api/nodo/me", "/api/nodo/account/export"]) {
+    let intercepted = false;
+    handlers.fetch({ request: { method: "GET", url: `https://nodo.test${path}` }, respondWith: () => { intercepted = true; } });
+    assert.equal(intercepted, false, "el worker deja pasar la API sin caché");
+  }
+  let assetResponse;
+  handlers.fetch({ request: { method: "GET", url: "https://nodo.test/_next/static/test.js" }, respondWith: (response) => { assetResponse = response; } });
+  await assetResponse;
+  assert.equal(cacheWrites, 1, "únicamente el asset público se almacena");
 });
 
 test("el editor conserva varias sesiones por día y expected_version", async () => {
@@ -52,18 +69,19 @@ test("el canal comercial no inventa una dirección de contacto", async () => {
   assert.match(support, /Canal comercial por configurar/);
 });
 
-test("la guía FIT es pública y la interfaz no presenta Intervals como conexión real", async () => {
+test("la guía FIT es pública y la conexión Intervals usa autorización propia", async () => {
   const guide = await source("src/app/(public)/guide/fit/page.tsx");
   const support = await source("src/app/(public)/support/page.tsx");
   const athlete = await source("src/components/athlete-features.tsx");
   assert.match(guide, /10 MiB/);
   assert.match(guide, /Intervals\.icu/);
   assert.match(support, /href="\/guide\/fit"/);
-  assert.match(athlete, /Conexión real pendiente/);
-  assert.match(athlete, /OAuth, sincronización ni webhooks/);
+  const connection = await source("src/components/intervals-connection.tsx");
+  assert.match(athlete, /<IntervalsConnection/);
   assert.match(athlete, /href="\/guide\/fit"/);
-  assert.match(athlete, /nodoRequest<Connection>\(connectionPath\)/);
-  assert.doesNotMatch(athlete, /connect\("real"\)/);
+  assert.match(connection, /authorization_url/);
+  assert.match(connection, /aplicación aprobada/);
+  assert.doesNotMatch(athlete, /connect\("simulated"\)/);
 });
 
 test("los adapters de producto respetan los contratos autenticados actuales", async () => {
@@ -73,9 +91,12 @@ test("los adapters de producto respetan los contratos autenticados actuales", as
   assert.match(athlete, /athletes\/\$\{identity\.id\}\/checkins\/\$\{form\.local_date\}/);
   assert.match(athlete, /athletes\/\$\{identity\.id\}\/activities\/fit/);
   assert.match(coach, /review-items\/\$\{item\.id\}\/decision/);
-  assert.match(coach, /recommendations\/\$\{item\.id\}\/decision/);
-  assert.match(coach, /nodoRequest<Recommendation\[\]>\("recommendations"\)/);
-  assert.match(coach, /nodoRequest<NamedResource\[\]>\(contract\.endpoint\)/);
+  const recommendations = await source("src/components/recommendations-workspace.tsx");
+  const resources = await source("src/components/resources-workspace.tsx");
+  assert.match(recommendations, /recommendations\/\$\{p\.id\}\/decision/);
+  assert.match(recommendations, /nodoRequest<Proposal\[\]>\("recommendations"\)/);
+  assert.match(resources, /nodoRequest<Template\[\]>\("templates"\)/);
+  assert.match(resources, /nodoRequest<Group\[\]>\("groups"\)/);
   assert.match(settings, /nodoRequest<Consent\[\]>\("consents"\)/);
   assert.match(settings, /account\/export/);
   assert.match(settings, /ELIMINAR MI CUENTA/);

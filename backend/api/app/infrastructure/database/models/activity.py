@@ -16,6 +16,7 @@ class Activity(Base, TimestampMixin):
     __tablename__ = "activities"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
     athlete_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 
     file_name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -31,7 +32,7 @@ class Activity(Base, TimestampMixin):
 
     # Resumen de sesión
     total_duration_sec: Mapped[float] = mapped_column(Float, default=0.0)
-    total_distance_m: Mapped[float] = mapped_column(Float, default=0.0)
+    total_distance_m: Mapped[float | None] = mapped_column(Float, nullable=True)
     avg_heart_rate: Mapped[int | None] = mapped_column(Integer, nullable=True)
     max_heart_rate: Mapped[int | None] = mapped_column(Integer, nullable=True)
     avg_speed_mps: Mapped[float | None] = mapped_column(Float, nullable=True)

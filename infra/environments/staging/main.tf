@@ -31,6 +31,15 @@ module "nodo" {
   worker_secret_bindings    = var.worker_secret_bindings
   migration_secret_bindings = var.migration_secret_bindings
 
+  public_app_url           = var.public_app_url
+  enable_intervals         = var.enable_intervals
+  enable_web_push          = var.enable_web_push
+  provider_secret_versions = var.provider_secret_versions
+  web_push_public_key      = var.web_push_public_key
+  web_push_contact         = var.web_push_contact
+  enable_vertex_ai         = var.enable_vertex_ai
+  ai_configuration         = var.ai_configuration
+
   api_env                 = var.api_env
   pwa_env                 = var.pwa_env
   worker_env              = var.worker_env

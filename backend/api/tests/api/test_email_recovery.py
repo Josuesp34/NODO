@@ -16,7 +16,7 @@ from app.core.database import get_db
 from app.infrastructure.database.models import Base
 from app.infrastructure.database.models.product import CommercialPlan, Job, Organization, Subscription
 from app.main import get_application
-from app.services.jobs import execute_job
+from app.services.jobs import claim_jobs, execute_job
 
 
 @pytest.fixture
@@ -125,7 +125,7 @@ def test_production_invitation_is_queued_encrypted_and_not_exposed(mail_api, mon
 
     async def deliver():
         async with sessions() as db:
-            active = await db.get(Job, job.id)
+            active = next(item for item in await claim_jobs(db, "email-test-worker") if item.id == job.id)
             await execute_job(db, active)
             await db.refresh(active)
             return active.status, active.payload

@@ -1,42 +1,35 @@
-# Matriz requisito → código → prueba → evidencia
+# Matriz requisito → implementación → prueba local → validación externa
 
-Actualizada: 23 de septiembre de 2026. Esta matriz distingue **código presente** de **evidencia de producción**. `Pendiente` no se convierte en hecho por existir documentación, un mock o CI local.
+Actualizada: 30 de septiembre de 2026. **Entrega de código `v0.5.0-rc.1`**. Las pruebas integradas, SHA, PR, CI y release se registran en [VALIDACION_HANDOVER.md](VALIDACION_HANDOVER.md). La publicación se comprueba mediante tag/comprobante; esta matriz no sustituye aceptación externa con código o mocks.
 
-| Requisito | Código / configuración | Prueba o gate | Evidencia exigida | Estado verificable |
-|---|---|---|---|---|
-| Identidad multirol y asignación | `backend/api/app/infrastructure/database/models/`, rutas auth | `tests/api/test_identity_and_planning.py`, acceso propio/denegado | CI del SHA + E2E multirol | Código y E2E local verificados; despliegue pendiente |
-| Sesión BFF segura | `frontend/apps/nodo-web`, ADR 0004 | cookie `httpOnly`, refresh, logout y cache | navegador + headers HTTPS | Código, build y navegador local verificados; HTTPS pendiente |
-| Planeación y CAS | rutas/modelos de planning | publish idempotente y conflicto concurrente | E2E coach→atleta | E2E local completo; recorrido público pendiente |
-| Actividad con dueño e idempotencia | modelos/migraciones, ingesta FIT | `test_fit_ingestion.py`, duplicados/acceso cruzado | importación staging | Código/pruebas locales verificados; staging pendiente |
-| PostgreSQL 16 particionado | migración `0004`, ADR 0007 | upgrade/check/downgrade/upgrade + particiones | Cloud SQL staging | PostgreSQL 16 local verificado; Cloud SQL pendiente |
-| intervals.icu | servicio adapter | `test_intervals_adapter.py`, contrato simulado | OAuth/webhook/backfill/revocación reales | Sólo simulación/local hasta verificar proveedor |
-| Cola persistente | servicio jobs y worker sobre Postgres | `test_jobs.py`, retry/lease/idempotencia | worker pool staging + métrica de cola | Código/pruebas locales verificados; despliegue pendiente |
-| Correo e identidad recuperable | Resend outbox, migración 0005, PWA `/password-reset` | `test_email_recovery.py`: cifrado, respuesta genérica, revocación y envío simulado | dominio verificado, worker, entrega/bounce reales | Código y PostgreSQL local verificados; proveedor real pendiente |
-| PWA única responsive/offline | `frontend/apps/nodo-web`, `DESIGN_SYSTEM.md` | `pwa-contract.test.mjs`, build y QA visual | Safari iOS y Chrome Android físicos | Build/navegador local verificados; dispositivos pendientes |
-| Molestias y revisión | API/PWA según plan maestro | reglas de prioridad y no ocultamiento | recorrido coach/persona | API/PWA y pruebas locales presentes; staging pendiente |
-| Copiloto coach | API simulada + `LLM_COACH.md` | `EVALUACIONES_LLM.md` + hard gates | proveedor real, trazas y aprobación | Simulación funcional; IA real pendiente |
-| Asistente persona | API simulada + `LLM_ATLETA.md` | `EVALUACIONES_LLM.md` + hard gates | proveedor real, trazas y aprobación | Simulación funcional; IA real pendiente |
-| Datos sintéticos 70 × 12 semanas | generador/fixtures objetivo | integridad, deportes/unidades/casos límite | artefacto de evaluación versionado | Pendiente |
-| API/PWA Cloud Run | `infra/modules/nodo_platform/workloads.tf` | Terraform validate, build containers, smoke | revisión/URL HTTPS | Configuración validada; no aprovisionada |
-| Worker pool y job migración | mismo módulo | build con Alembic + job antes de servicios | ejecuciones Cloud Run | Configuración y preflight validados; build/ejecución pendientes |
-| Cloud SQL privado | `infra/modules/nodo_platform/main.tf` | Terraform plan + conexión desde Cloud Run | inventario GCP y `/health` | Configuración validada; plan/apply pendientes |
-| Storage/Secret Manager | mismo módulo | policy scan + acceso mínimo | inventario/IAM real | Configuración validada; valores secretos externos |
-| IAM/WIF sin llaves | `iam.tf`, deploy workflows | OIDC de refs aprobadas, ref negada | audit log GitHub/GCP | Configuración validada; conexión externa pendiente |
-| Supply chain | workflows `security.yml`, backend/frontend | CodeQL, OSV, Trivy, dependency review, SBOM | checks del SHA/digests | Definido; debe correr en GitHub |
-| Backups/PITR | Terraform + `ops/backup-cloud-sql.sh` | restore drill aislado | RPO/RTO medidos | Configurado en código; drill pendiente |
-| Rollback | `ops/rollback-cloud-run.sh` | revisión previa + smoke | incidente/drill fechado | Runbook listo; no ejecutado |
-| Costos/alertas | `monitoring.tf`, `COSTOS.md` | plan/cotización y canales | budget/alertas reales | Desactivado hasta aprobación humana |
-| Seguridad/privacidad | `SEGURIDAD.md`, aplicación | acceso cruzado, rate limit, export/delete, pentest | aprobaciones y reporte | Controles locales presentes; pentest/gates humanos pendientes |
-| Lanzamiento vendible | `LANZAMIENTO.md`, `PILOT_READINESS.md` | checklist GO/NO-GO completo | URL, release, soporte, precio/legal | Piloto acompañado listo en código; **NO-GO producción** |
+**Restricción vigente:** no crear, modificar ni desplegar recursos Google Cloud. Código, pruebas e integración/publicación GitHub siguen autorizados. Josué recibe la preparación para activar después; Vibe Conversa queda fuera.
 
-## Evidencia de plataforma generada en esta rama
+| Requisito | Implementación | Prueba local / evidencia disponible | Validación externa / estado de cierre |
+| --- | --- | --- | --- |
+| F0 · Fundación reproducible | FastAPI, PWA, Docker/Compose, Alembic y CI; `ops/demo.py`, `compose.demo.yml` | Tests backend/frontend, builds y demo sintética; checkout limpio comprobado en CI Docker | CI/tag en comprobante; recepción de Josué pendiente |
+| FA · PostgreSQL 16 | Migración 0004, partición/BRIN y migraciones encadenadas de producto/proveedores/privacidad | Ciclos upgrade/check/downgrade/upgrade de paquetes en PostgreSQL; ciclo completo de la mezcla aprobado | Cloud SQL y particiones del entorno activado pendientes |
+| F1 · Identidad | Modelos auth/organizaciones, multirol, asignaciones, invitación y bootstrap por job | `test_identity_and_planning.py`, `test_bootstrap_admin.py`; accesos cruzados, rol actual y revocación | Identidades nominales, acceso admin y activación real pendientes |
+| F2 · PWA/BFF | `frontend/apps/nodo-web`, cookies httpOnly, refresh rotado, origen/cuerpo acotados, cache por cuenta con expiración/invalidación | Tests `backend-transport`, `bff-security`, `pwa-contract`; 39 casos E2E y QA integrado aprobados | HTTPS/cookies del despliegue, Safari iOS/Chrome Android físicos pendientes |
+| F3 · Perfil | Perfil versionado, deportes/disponibilidad/parámetros/fuente/vigencia y UI coach/atleta | `test_pilot_product.py`, `test_product_completion.py`; conserva histórico y datos insuficientes | Recepción con participantes consentidos pendiente |
+| F4 · Calendario | Bloques, competencias, sesiones/pasos/objetivos, CAS y publicación idempotente | `test_identity_and_planning.py`, `test_product_completion.py`, E2E; conflictos y visibilidad atleta | Recorrido desplegado y recepción pendientes |
+| F5 · FIT/ingesta | `activity_routes.py`, parser FIT, hash/dueño, laps/telemetría y worker | `test_fit_ingestion.py`, `test_fit_parser.py`, `test_jobs.py`; duplicados, acceso y recálculo | Archivos/dispositivos consentidos, cola/alertas cloud pendientes |
+| F6 · Intervals.icu | `intervals_routes.py`, `intervals_real.py`, OAuth/state/cifrado/webhook/backfill/sync/revoke y UI | `test_provider_routes.py`, `test_real_providers.py`, `test_provider_corrections.py`; HTTP interceptado, estado consumido y cleanup cifrado reintentable | App aprobada, callback/dominio y conexión/importación/revocación reales pendientes |
+| F7 · Comparación | `domain/comparison.py`, actividades paginadas/detalle/vínculo CAS, observaciones/días locales y UI | `test_product_completion.py`, dominio y corpus; laps sólo con alineación compatible, unidades/faltantes explícitos | Rendimiento/despliegue y contraste con datos consentidos pendientes |
+| F8 · Molestias | Check-ins/reportes/actualizaciones, bandeja/decisiones/reapertura y UI | `test_pilot_product.py`, `test_product_completion.py`; señal nueva no queda oculta, historial conservado | Recepción de equipo piloto pendiente; sin declaración clínica |
+| F9 · LLM dual | `assistant_runtime.py`, tools, Vertex ADC, chat persistido de ambos roles, streaming/cancelación, citas/confirmación/replay y límites | `test_provider_routes.py`, `test_real_providers.py`, `test_provider_corrections.py`; mocks HTTP, aislamiento y revocación durante proveedor/contexto/historial | Modelo/región/retención/gasto aprobados, evaluaciones y latencia de proveedor real pendientes |
+| F10 · Ajustes | Recomendaciones con evidencia/diff, modificación/decisión y versión base | `test_product_completion.py`, `test_pilot_product.py`; propuesta obsoleta, revocación y aplicación idempotente | Aceptación del recorrido desplegado pendiente |
+| F11 · Escala | Grupos/plantillas/excepciones, paginación y `ops/qa_corpus.py` con 70 perfiles × 12 semanas | `ops/tests/test_qa_corpus.py`, corpus/benchmark autenticado local; métricas concretas en validación del SHA | p95 cloud bajo recursos/carga definidos y recepción a escala pendientes |
+| F12 · Privacidad/operación | Consentimiento por finalidad, recuperación/email, export/borrado FK, retención periódica, limpieza durable local/GCS, auditoría | `test_privacy_notifications.py`, `test_provider_corrections.py`, `test_email_recovery.py`, `test_object_store.py`; PostgreSQL/SQLite, tokens/chats/outbox protegidos | Correo real, eliminación remota, restore/retención backups, legal y revisión especializada pendientes |
+| F13 · Notificaciones | Web Push, eventos durables de producto, preferencias/silencio/zona, recordatorios opt-in en la hora previa con plazo, dedupe/baja; escenarios de carga explícita hasta competencia | `test_product_insights_notifications.py`, Push/privacidad/proveedores; rollback/dedupe/revocación, concurrencia PostgreSQL y escenarios sin conversión ni autopublicación; transporte HTTP interceptado | VAPID/HTTPS, teléfono consentido, recepción/revocación y aceptación de escenarios pendientes |
+| F14 · Comercial | Catálogos autenticados, planes/suscripciones/pagos administrados, cupos/suspensión y panel mensual de estimaciones/reservas IA por cuenta/admin | `test_privacy_notifications.py`, `test_product_insights_notifications.py`, providers; carrera cupos PostgreSQL, runs sin doble suma y acceso de costos aislado | Precio/soporte/condiciones y contraste de consumo real pendientes; sin pasarela/facturación |
+| FB/F15 · Plataforma | Terraform staging/prod, Cloud Run API/PWA/worker/jobs, Cloud SQL privado, Storage, Secret Manager, WIF e imágenes por digest | Validaciones IaC/workflows/scripts/builds, pruebas de preflight/smoke; sin apply ni recursos cloud creados | Josué activa cuentas/proyectos/billing, revisa plan/IAM y verifica HTTPS/servicios reales |
+| F15 · Persistencia y recuperación | Object store, backup/PITR, `ops/backup-cloud-sql.sh`, rollback y runbooks | Pruebas locales con HTTP/storage controlados; scripts/checklists presentes | Restore aislado, rollback, RPO/RTO medidos y retención física/cloud pendientes |
+| F15 · Costos/alertas | IaC Monitoring/budget, métricas ops/cola/proveedores y documentación | Contratos/configuración revisables; no prueba recepción de alertas | Billing/créditos, consumo bruto/neto, canales/guardia y alertas reales pendientes |
+| F0/F15 · Supply chain | Workflows backend/frontend/platform/security; auditorías directas de dependencias resueltas, CodeQL/OSV/Trivy/SBOM | Checks locales y CI de cada snapshot; resultado final consolidado pendiente | CI exacto del candidato y digests finales; review nativo sólo si API/permisos disponibles, no etiquetarlo aprobado cuando falla |
+| F16 · Lanzamiento | Onboarding, ayuda, demo, guía/handovers y checklists legales/operativos | E2E y accesibilidad local en cierre; aceptación de Josué aún no realizada | Dominio/HTTPS, proveedores/dispositivos, documentos aprobados, soporte/precio y recepción: **NO-GO apertura a atletas reales** |
 
-- `terraform fmt -check -recursive infra`: verde con Terraform 1.13.3.
-- `terraform validate`: verde para `staging` y `prod` con proveedores 7.46.1, sin backend/credenciales.
-- `bash -n ops/*.sh`: verde.
-- parseo YAML de todos los workflows: verde.
-- backend: `50 passed` y `ruff check` verde.
-- PostgreSQL 16 local: 0001→0005, `alembic check`, downgrade base y upgrade head verdes.
-- PWA: typecheck, `9/9` pruebas, build Next y E2E local coach→atleta previo verdes.
+## Cómo cerrar una fila
 
-Eso valida estructura local, no recursos GCP, IAM real, costos, restauración, despliegue ni producto publicado.
+Registrar la implementación integrada y la prueba con su SHA/entorno/resultados; después añadir la evidencia externa que corresponda. No reutilizar cifras del candidato `v0.4.0-rc.1` para esta mezcla. Una evaluación simulada valida contratos y permisos, no calidad de un modelo real; un benchmark local no acredita capacidad cloud; una migración local no acredita una restauración productiva.
+
+Referencias: [FUNCIONALIDADES_PRODUCTO.md](FUNCIONALIDADES_PRODUCTO.md), [VALIDACION_PRIVACIDAD_PUSH.md](VALIDACION_PRIVACIDAD_PUSH.md), [QA_CORPUS_70_ATLETAS.md](QA_CORPUS_70_ATLETAS.md), [EVALUACIONES_LLM.md](EVALUACIONES_LLM.md) y [LANZAMIENTO.md](LANZAMIENTO.md).

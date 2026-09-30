@@ -31,3 +31,30 @@ enable_monitoring_alerts = false
 # }
 # api_env = { RESEND_FROM_EMAIL = "NODO <acceso@DOMINIO_VERIFICADO>", PUBLIC_APP_URL = "https://DOMINIO_APROBADO" }
 # worker_env = { RESEND_FROM_EMAIL = "NODO <acceso@DOMINIO_VERIFICADO>", PUBLIC_APP_URL = "https://DOMINIO_APROBADO" }
+
+# Proveedores desactivados hasta configurar cuentas/consentimientos y pruebas reales.
+public_app_url   = "" # https://ORIGEN_PWA_APROBADO, sin slash final
+# NODO_APP_ORIGIN y callback OAuth se derivan de ese origen; API permanece privada.
+enable_intervals = false
+enable_web_push  = false
+enable_vertex_ai = false
+# provider_secret_versions = {
+#   intervals-client-id           = "1"
+#   intervals-client-secret       = "1"
+#   intervals-webhook-secret      = "1"
+#   provider-token-encryption-key = "1"
+#   web-push-private-key          = "1"
+#   push-encryption-key           = "1"
+# }
+# web_push_public_key = "REPLACE_WITH_PUBLIC_VAPID_KEY"
+# web_push_contact    = "mailto:CONTACTO_APROBADO"
+# ai_configuration = {
+#   model = "REPLACE_WITH_REVIEWED_MODEL"
+#   location = "REPLACE_WITH_CONFIRMED_MODEL_REGION"
+#   user_monthly_usd = 0 # reemplazar con tope aprobado positivo
+#   org_monthly_usd = 0
+#   input_usd_per_million = 0 # tarifa vigente de modelo/región
+#   output_usd_per_million = 0
+# }
+# API y worker reciben STORAGE_BACKEND=gcs y bucket privado por Terraform.
+# Ningún valor de secreto se escribe en tfvars/state ni outputs.

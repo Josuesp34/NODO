@@ -1,7 +1,8 @@
 from datetime import date, datetime
 from typing import Literal
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.api.schemas import StepGroup
 
@@ -15,13 +16,22 @@ class ProfileUpsert(Contract):
     timezone: str
     goals: dict = Field(default_factory=dict)
     availability: dict = Field(default_factory=dict)
-    rest_hr: float | None = Field(default=None, gt=0)
-    max_hr: float | None = Field(default=None, gt=0)
-    ftp: float | None = Field(default=None, gt=0)
-    threshold_pace_sec_per_km: float | None = Field(default=None, gt=0)
+    rest_hr: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    max_hr: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    ftp: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    threshold_pace_sec_per_km: float | None = Field(default=None, gt=0, allow_inf_nan=False)
     trimp_variant: Literal["banister_male", "banister_female"] | None = None
     source: str = Field(default="manual", min_length=1, max_length=80)
     valid_from: date
+
+    @field_validator("timezone")
+    @classmethod
+    def timezone_exists(cls, value):
+        try:
+            ZoneInfo(value)
+        except (ZoneInfoNotFoundError, ValueError):
+            raise ValueError("Zona horaria IANA inválida") from None
+        return value
 
     @model_validator(mode="after")
     def valid_hr(self):
@@ -44,6 +54,7 @@ class CompetitionCreate(Contract):
 
 
 class CompetitionView(CompetitionCreate):
+    version: int
     id: int
     athlete_id: int
     coach_id: int
@@ -51,7 +62,7 @@ class CompetitionView(CompetitionCreate):
 
 class ObservationCreate(Contract):
     metric_type: str = Field(min_length=1, max_length=60)
-    value: float
+    value: float = Field(allow_inf_nan=False)
     unit: str = Field(min_length=1, max_length=40)
     method: str = Field(min_length=1, max_length=80)
     source: str = Field(min_length=1, max_length=80)
@@ -99,23 +110,27 @@ class ComplaintCreate(Contract):
 
 
 class ComplaintUpdateCreate(Contract):
+    expected_version: int | None = Field(default=None, ge=1)
     intensity_0_10: int = Field(ge=0, le=10)
     limits_movement: bool
     note: str | None = Field(default=None, max_length=2000)
 
 
 class ComplaintView(ComplaintCreate):
+    version: int
     id: int
     athlete_id: int
     status: str
 
 
 class ReviewDecision(Contract):
+    expected_version: int | None = Field(default=None, ge=1)
     status: Literal["reviewed", "follow_up", "closed"]
     note: str = Field(min_length=1, max_length=2000)
 
 
 class ReviewItemView(Contract):
+    version: int
     id: int
     athlete_id: int
     complaint_id: int | None
@@ -142,6 +157,7 @@ class GroupMemberCreate(Contract):
 
 
 class GroupMemberView(GroupMemberCreate):
+    version: int
     id: int
     group_id: int
 
@@ -149,7 +165,7 @@ class GroupMemberView(GroupMemberCreate):
 class TemplateCreate(Contract):
     name: str = Field(min_length=1, max_length=255)
     sport_type: Literal["running", "cycling", "swimming", "triathlon"]
-    workouts: list[dict] = Field(min_length=1)
+    workouts: list[dict] = Field(min_length=1, max_length=100)
 
 
 class TemplateView(TemplateCreate):
@@ -159,8 +175,23 @@ class TemplateView(TemplateCreate):
     version: int
 
 
+class TemplateReplace(TemplateCreate):
+    expected_version: int = Field(ge=1)
+
+
+class MemberReplace(Contract):
+    overrides: dict
+    expected_version: int = Field(ge=1)
+
+
+class CompetitionReplace(CompetitionCreate):
+    expected_version: int = Field(ge=1)
+
+
 class TemplateApply(Contract):
-    athlete_ids: list[int] = Field(min_length=1, max_length=100)
+    athlete_ids: list[int] = Field(default_factory=list, max_length=100)
+    group_id: int | None = Field(default=None, gt=0)
+    expected_version: int | None = Field(default=None, ge=1)
     overrides: dict[int, dict] = Field(default_factory=dict)
 
 
@@ -242,7 +273,9 @@ class RecommendationCreate(Contract):
 
 
 class RecommendationDecision(Contract):
-    action: Literal["approve", "reject"]
+    action: Literal["approve", "modify", "reject"]
+    changes: WorkoutChanges | None = None
+    expected_plan_version: int | None = Field(default=None, ge=1)
     note: str | None = Field(default=None, max_length=2000)
 
 

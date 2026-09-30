@@ -1,6 +1,12 @@
-# Base técnica de la nueva etapa
+# Estado técnico de NODO
 
-Actualizado el 14 de septiembre de 2026, al cerrar la fase F0 de [`PLAN_EJECUCION.md`](PLAN_EJECUCION.md).
+Actualizado: 30-09-2026. Entrega de código `v0.5.0-rc.1` con demo y CI verificados. El tag y el comprobante de release identifican el SHA final. El estado vigente está en [FUNCIONALIDADES_PRODUCTO](FUNCIONALIDADES_PRODUCTO.md), [VALIDACION_HANDOVER](VALIDACION_HANDOVER.md) y [HANDOVER_JOSUE](HANDOVER_JOSUE.md).
+
+Se integraron producto/comparación, ambos chats y adaptadores OAuth/Vertex, privacidad/retención/FIT privados, notificaciones, administración y plataforma preparada. Los proveedores de la demo son simulados; una prueba contractual no acredita operación real. Alembic termina en `0009_operations`. PostgreSQL 16 usa particiones/BRIN y tabla default; no requiere TimescaleDB.
+
+**Restricción vigente:** ninguna creación, modificación o despliegue Google Cloud en esta entrega. Josué activa infraestructura, dominio y proveedores después de recibir código/configuración. Vibe Conversa queda fuera. Las autorizaciones y cifras históricas siguientes conservan su fecha y no describen la versión nueva.
+
+## Historial técnico
 
 ## Fase F0 · Higiene, contratos y ADR
 

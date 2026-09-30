@@ -1,2 +1,2 @@
-import { CopilotWorkspace } from "@/components/coach-features";
-export default function CopilotPage() { return <CopilotWorkspace />; }
+import { AssistantWorkspace } from "@/components/assistant-workspace";
+export default function CopilotPage() { return <AssistantWorkspace role="coach" />; }

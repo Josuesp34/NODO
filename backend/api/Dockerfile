@@ -33,12 +33,9 @@ RUN python -m pip install --no-cache-dir --upgrade pip==26.2.0 && \
     python -m pip install --no-cache-dir /wheels/* && rm -rf /wheels
 
 # Copiar el código de la aplicación
-COPY ./app ./app
-COPY ./alembic.ini ./alembic.ini
-COPY ./migrations ./migrations
-
-# Asignar permisos al usuario no root
-RUN chown -R apiuser:apiuser /app
+COPY --chown=apiuser:apiuser ./app ./app
+COPY --chown=apiuser:apiuser ./alembic.ini ./alembic.ini
+COPY --chown=apiuser:apiuser ./migrations ./migrations
 USER apiuser
 
 # Exponer el puerto

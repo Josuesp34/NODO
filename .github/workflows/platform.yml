@@ -28,13 +28,19 @@ jobs:
       - name: Validate staging without credentials or remote state
         working-directory: infra/environments/staging
         run: |
-          terraform init -backend=false -input=false
+          terraform init -backend=false -input=false -lockfile=readonly
           terraform validate
       - name: Validate production without credentials or remote state
         working-directory: infra/environments/prod
         run: |
-          terraform init -backend=false -input=false
+          terraform init -backend=false -input=false -lockfile=readonly
           terraform validate
+
+      - name: Test runtime configuration with mocked providers
+        working-directory: infra/modules/nodo_platform
+        run: |
+          terraform init -backend=false -input=false -lockfile=readonly
+          terraform test
 
   shell:
     runs-on: ubuntu-latest
@@ -42,3 +48,4 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - run: for script in ops/*.sh; do bash -n "$script"; done
       - run: bash ops/test-validate-release.sh
+      - run: python3 -m unittest discover -s ops/tests -p test_smoke_and_backups.py -v

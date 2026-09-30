@@ -100,10 +100,11 @@ locals {
   worker_runtime_secrets = merge(var.worker_secret_bindings, local.worker_provider_secrets)
   # object_store currently uses one private bucket with owner-scoped fit/export prefixes.
   storage_env = {
-    STORAGE_BACKEND     = "gcs"
-    STORAGE_BUCKET      = google_storage_bucket.fit.name
-    DATA_RETENTION_DAYS = tostring(var.fit_retention_days)
-    PRIVACY_GCS_BUCKETS = join(",", [google_storage_bucket.fit.name, google_storage_bucket.exports.name])
+    STORAGE_BACKEND       = "gcs"
+    STORAGE_BUCKET        = google_storage_bucket.fit.name
+    DATA_RETENTION_DAYS   = tostring(var.fit_retention_days)
+    EXPORT_RETENTION_DAYS = tostring(var.export_retention_days)
+    PRIVACY_GCS_BUCKETS   = join(",", [google_storage_bucket.fit.name, google_storage_bucket.exports.name])
   }
   provider_env = {
     PUBLIC_APP_URL          = var.public_app_url
